@@ -1,4 +1,6 @@
 export default {
+  'common.text.minutes': 'mins',
+  'common.text.seconds': 'secs',
   'common.button.resetdefault': 'Reset to default',
   'common.button.perview': 'Preview',
   'common.button.readonly': 'Readonly',

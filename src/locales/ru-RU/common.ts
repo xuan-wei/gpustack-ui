@@ -1,4 +1,6 @@
 export default {
+  'common.text.minutes': 'мин',
+  'common.text.seconds': 'сек',
   'common.button.resetdefault': 'Сбросить по умолчанию',
   'common.button.perview': 'Предпросмотр',
   'common.button.readonly': 'Только чтение',

@@ -1,4 +1,6 @@
 export default {
+  'common.text.minutes': '分',
+  'common.text.seconds': '秒',
   'common.button.resetdefault': 'デフォルトにリセット',
   'common.button.perview': 'プレビュー',
   'common.button.readonly': '読み取り専用',

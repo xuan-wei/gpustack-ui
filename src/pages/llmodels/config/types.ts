@@ -16,6 +16,10 @@ export interface ListItem {
   speech_to_text?: boolean;
   text_to_speech?: boolean;
   replicas: number;
+  auto_load?: boolean;
+  auto_load_replicas?: number;
+  auto_unload?: boolean;
+  auto_unload_timeout?: number;
   s3Address: string;
   name: string;
   description: string;
@@ -23,6 +27,7 @@ export interface ListItem {
   local_path?: string;
   created_at: string;
   updated_at: string;
+  last_request_time?: string;
   gpu_selector?: {
     gpu_ids: string[];
   };
@@ -38,6 +43,10 @@ export type SourceType =
 export interface FormData {
   backend: string;
   restart_on_error?: boolean;
+  auto_load?: boolean;
+  auto_load_replicas?: number;
+  auto_unload?: boolean;
+  auto_unload_timeout?: number;
   env?: Record<string, any>;
   size?: number;
   quantization?: number;
@@ -171,6 +180,11 @@ export interface CatalogSpec {
   meta: Record<string, any>;
   replicas: number;
   ready_replicas: number;
+  auto_load?: boolean;
+  auto_load_replicas?: number;
+  auto_unload?: boolean;
+  auto_unload_timeout?: number;
+  last_request_time?: string;
   categories: any[];
   placement_strategy: string;
   cpu_offloading: boolean;
@@ -199,6 +213,7 @@ export interface EvaluateSpec {
   meta?: Record<string, any>;
   replicas?: number;
   ready_replicas?: number;
+  auto_load?: boolean;
   categories?: any[];
   placement_strategy?: string;
   cpu_offloading?: boolean;

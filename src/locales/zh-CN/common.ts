@@ -1,4 +1,6 @@
 export default {
+  'common.text.minutes': '分',
+  'common.text.seconds': '秒',
   'common.button.resetdefault': '恢复默认',
   'common.button.perview': '预览',
   'common.button.readonly': '只读',
