@@ -32,6 +32,7 @@ import {
   Input,
   Select,
   Space,
+  Switch,
   Tooltip,
   Typography,
   message
@@ -579,14 +580,40 @@ const Models: React.FC<ModelsProps> = ({
     }
   };
 
+  const handleAutoLoadToggle = useCallback(
+    async (checked: boolean, record: ListItem) => {
+      try {
+        const autoLoadValue = checked ? 1 : 0;
+        await updateModel(
+          getFormattedData(record, { auto_load: autoLoadValue })
+        );
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error: any) {
+        if (
+          error?.response?.data?.detail?.includes(
+            'no such column: models.auto_load'
+          )
+        ) {
+          message.warning(
+            'Auto-load feature requires database migration. Please contact administrator.'
+          );
+        } else {
+          message.error(intl.formatMessage({ id: 'common.message.failed' }));
+        }
+      }
+    },
+    [handleSearch]
+  );
+
   const columns: SealColumnProps[] = useMemo(() => {
     return [
       {
         title: intl.formatMessage({ id: 'common.table.name' }),
         dataIndex: 'name',
         key: 'name',
-        width: 400,
-        span: 6,
+        width: 300,
+        span: 5,
         render: (text: string, record: ListItem) => (
           <span className="flex-center" style={{ maxWidth: '100%' }}>
             <AutoTooltip ghost>
@@ -600,7 +627,8 @@ const Models: React.FC<ModelsProps> = ({
         title: intl.formatMessage({ id: 'models.form.source' }),
         dataIndex: 'source',
         key: 'source',
-        span: 7,
+        width: 250,
+        span: 5,
         render: (text: string, record: ListItem) => (
           <span className="flex flex-column" style={{ width: '100%' }}>
             <AutoTooltip ghost>{generateSource(record)}</AutoTooltip>
@@ -624,7 +652,8 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'replicas',
         key: 'replicas',
         align: 'center',
-        span: 4,
+        width: 100,
+        span: 3,
         editable: {
           valueType: 'number',
           title: intl.formatMessage({ id: 'models.table.replicas.edit' })
@@ -636,12 +665,47 @@ const Models: React.FC<ModelsProps> = ({
         )
       },
       {
+        title: (
+          <Tooltip
+            title={
+              intl.formatMessage({ id: 'models.form.auto_load.tips' }) ||
+              'Whether to automatically load model when requests come in'
+            }
+          >
+            <span style={{ fontWeight: 'var(--font-weight-medium)' }}>
+              {intl.formatMessage({ id: 'models.form.auto_load' }) ||
+                'Auto-load'}
+            </span>
+            <QuestionCircleOutlined className="m-l-5" />
+          </Tooltip>
+        ),
+        dataIndex: 'auto_load',
+        key: 'auto_load',
+        align: 'center',
+        width: 120,
+        span: 3,
+        render: (enabled: boolean | number, record: ListItem) => (
+          <Switch
+            checked={enabled === 1 || enabled === true}
+            size="small"
+            onChange={(checked) => handleAutoLoadToggle(checked, record)}
+            disabled={record.auto_load === undefined}
+            title={
+              record.auto_load === undefined
+                ? 'Auto-load feature requires database migration'
+                : ''
+            }
+          />
+        )
+      },
+      {
         title: intl.formatMessage({ id: 'common.table.createTime' }),
         dataIndex: 'created_at',
         key: 'created_at',
         defaultSortOrder: 'descend',
         sortOrder,
         sorter: false,
+        width: 180,
         span: 4,
         render: (text: number) => (
           <AutoTooltip ghost>
@@ -653,6 +717,7 @@ const Models: React.FC<ModelsProps> = ({
         title: intl.formatMessage({ id: 'common.table.operation' }),
         key: 'operation',
         dataIndex: 'operation',
+        width: 120,
         span: 3,
         render: (text, record) => (
           <DropdownButtons
@@ -662,7 +727,7 @@ const Models: React.FC<ModelsProps> = ({
         )
       }
     ];
-  }, [sortOrder, intl, handleSelect]);
+  }, [sortOrder, intl, handleSelect, handleAutoLoadToggle]);
 
   const handleOnClick = async () => {
     if (isLoading) {

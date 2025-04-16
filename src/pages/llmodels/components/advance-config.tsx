@@ -460,6 +460,24 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
           ></LabelSelector>
         </Form.Item>
 
+        <div style={{ paddingBottom: 22, paddingLeft: 10 }}>
+          <Form.Item<FormData>
+            name="auto_load"
+            valuePropName="checked"
+            style={{ padding: '0 10px', marginBottom: 0 }}
+            noStyle
+          >
+            <CheckboxField
+              title={intl.formatMessage({
+                id: 'models.form.auto_load.tips'
+              })}
+              label={intl.formatMessage({
+                id: 'models.form.auto_load'
+              })}
+            ></CheckboxField>
+          </Form.Item>
+        </div>
+
         {backend === backendOptionsMap.llamaBox && (
           <div style={{ paddingBottom: 22, paddingLeft: 10 }}>
             <Form.Item<FormData>

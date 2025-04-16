@@ -148,5 +148,8 @@ export default {
   'models.table.apiAccessInfo.jinaCompatible': 'Jina互換',
   'models.table.apiAccessInfo.gotoCreate': '作成に移動',
   'models.search.parts': '{n} 部分',
-  'models.search.evaluate.error': '評価中にエラーが発生しました: '
+  'models.search.evaluate.error': '評価中にエラーが発生しました: ',
+  'models.form.auto_load': '自動読み込み',
+  'models.form.auto_load.tips':
+    'APIリクエストが到着すると自動的に読み込まれます。無効にすると、使用する前に手動でモデルを起動する必要があります。'
 };

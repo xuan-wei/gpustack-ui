@@ -149,7 +149,10 @@ export default {
   'models.table.apiAccessInfo.jinaCompatible': 'Совместимо с Jina',
   'models.table.apiAccessInfo.gotoCreate': 'Перейти к созданию',
   'models.search.parts': '{n} частей',
-  'models.search.evaluate.error': 'Возникла ошибка при вычислении: '
+  'models.search.evaluate.error': 'Возникла ошибка при вычислении: ',
+  'models.form.auto_load': 'Автозагрузка',
+  'models.form.auto_load.tips':
+    'При включении модель будет автоматически загружаться при поступлении запросов API. При отключении необходимо вручную запустить модель перед использованием.'
 };
 
 // ========== To-Do: Translate Keys (Remove After Translation) ==========

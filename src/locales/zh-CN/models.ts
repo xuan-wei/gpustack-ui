@@ -141,5 +141,8 @@ export default {
   'models.table.apiAccessInfo.jinaCompatible': 'Jina 兼容',
   'models.table.apiAccessInfo.gotoCreate': '去创建',
   'models.search.parts': '{n} 个文件',
-  'models.search.evaluate.error': '评估过程中发生了错误：'
+  'models.search.evaluate.error': '评估过程中发生了错误：',
+  'models.form.auto_load': '自动加载',
+  'models.form.auto_load.tips':
+    '启用后，当API请求到达时，该模型将自动加载。禁用时，您必须在使用前手动启动模型。'
 };

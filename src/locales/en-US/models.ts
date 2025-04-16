@@ -148,5 +148,8 @@ export default {
   'models.table.apiAccessInfo.jinaCompatible': 'Jina Compatible',
   'models.table.apiAccessInfo.gotoCreate': 'Go to Create',
   'models.search.parts': '{n} parts',
-  'models.search.evaluate.error': 'An error occurred during evaluation: '
+  'models.search.evaluate.error': 'An error occurred during evaluation: ',
+  'models.form.auto_load': 'Auto-load',
+  'models.form.auto_load.tips':
+    'When enabled, this model will automatically load when API requests arrive. When disabled, you must manually start the model before using it.'
 };
