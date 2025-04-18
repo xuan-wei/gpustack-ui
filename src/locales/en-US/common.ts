@@ -238,5 +238,7 @@ export default {
   'common.appearance': 'Appearance',
   'common.appearance.dark': 'Dark',
   'common.appearance.light': 'Light',
-  'common.appearance.system': 'System Default'
+  'common.appearance.system': 'System Default',
+  'common.text.minutes': 'mins',
+  'common.text.seconds': 'secs'
 };

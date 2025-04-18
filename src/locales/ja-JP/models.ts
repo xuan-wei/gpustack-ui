@@ -150,6 +150,18 @@ export default {
   'models.search.parts': '{n} 部分',
   'models.search.evaluate.error': '評価中にエラーが発生しました: ',
   'models.form.auto_load': '自動読み込み',
+  'models.form.auto_load_replicas': '自動読み込みレプリカ',
+  'models.form.auto_load_replicas.min_warning':
+    '自動読み込みレプリカは1以上でなければなりません。1に設定します。',
   'models.form.auto_load.tips':
-    'APIリクエストが到着すると自動的に読み込まれます。無効にすると、使用する前に手動でモデルを起動する必要があります。'
+    'APIリクエストが到着すると自動的に読み込まれます。無効にすると、使用する前に手動でモデルを起動する必要があります。',
+  'models.form.auto_unload': '自動オフロード',
+  'models.form.waiting_unloading': 'アンロード待ち...',
+  'models.form.auto_unload.tips':
+    '指定された期間内にリクエストがない場合、モデルは自動的にオフロードされます。デフォルト値は10分です。',
+  'models.form.auto_unload_timeout': '自動オフロードタイムアウト',
+  'models.form.auto_unload_timeout.min_warning':
+    '自動オフロードタイムアウトは5分以上でなければなりません。5分に設定します。',
+  'models.form.auto_unload_timeout.tips':
+    '指定された期間内にリクエストがない場合、モデルは自動的にオフロードされます。デフォルト値は10分です。'
 };

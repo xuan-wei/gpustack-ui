@@ -149,7 +149,19 @@ export default {
   'models.table.apiAccessInfo.gotoCreate': 'Go to Create',
   'models.search.parts': '{n} parts',
   'models.search.evaluate.error': 'An error occurred during evaluation: ',
-  'models.form.auto_load': 'Auto-load',
+  'models.form.auto_load': 'Auto Load',
+  'models.form.auto_load_replicas': 'Auto Load Replicas',
+  'models.form.auto_load_replicas.min_warning':
+    'Auto load replicas cannot be less than 1, setting to 1',
   'models.form.auto_load.tips':
-    'When enabled, this model will automatically load when API requests arrive. When disabled, you must manually start the model before using it.'
+    'When enabled, this model will automatically load when API requests arrive. When disabled, you must manually start the model before using it.',
+  'models.form.auto_unload': 'Auto Unload',
+  'models.form.waiting_unloading': 'Waiting for Unloading...',
+  'models.form.auto_unload.tips':
+    'When enabled, this model will automatically unload when no requests are received for a period of time. When disabled, you must manually unload the model before using it.',
+  'models.form.auto_unload_timeout': 'Auto Unload Timeout',
+  'models.form.auto_unload_timeout.min_warning':
+    'Auto unload timeout cannot be less than 5 minutes, setting to 5 minutes',
+  'models.form.auto_unload_timeout.tips':
+    'The model will be automatically offloaded when no requests are received for the specified period of time. The default value is 10 minutes.'
 };

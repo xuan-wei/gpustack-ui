@@ -118,6 +118,7 @@ const getFormattedData = (record: any, extraData = {}) => ({
       'ready_replicas',
       'created_at',
       'updated_at',
+      'last_request_time',
       'rowIndex'
     ]),
     ...extraData
@@ -245,14 +246,49 @@ const Models: React.FC<ModelsProps> = ({
     setSortOrder(order);
   };
 
-  const handleOnCell = useCallback(async (record: any) => {
-    try {
-      await updateModel(getFormattedData(record));
-      message.success(intl.formatMessage({ id: 'common.message.success' }));
-    } catch (error) {
-      // ignore
-    }
-  }, []);
+  const handleOnCell = useCallback(
+    async (record: any, dataIndex: string) => {
+      try {
+        // 如果是auto_load_replicas字段，确保值不小于1
+        if (
+          dataIndex === 'auto_load_replicas' &&
+          record.auto_load_replicas !== undefined
+        ) {
+          if (record.auto_load_replicas < 1) {
+            // 更新值为1
+            record.auto_load_replicas = 1;
+            message.info(
+              intl.formatMessage({
+                id: 'models.form.auto_load_replicas.min_warning'
+              }) || 'Auto load replicas cannot be less than 1, setting to 1'
+            );
+          }
+        }
+        // 如果是auto_unload_timeout字段，确保值不小于5
+        if (
+          dataIndex === 'auto_unload_timeout' &&
+          record.auto_unload_timeout !== undefined
+        ) {
+          if (record.auto_unload_timeout < 5) {
+            // 更新值为5
+            record.auto_unload_timeout = 5;
+            message.info(
+              intl.formatMessage({
+                id: 'models.form.auto_unload_timeout.min_warning'
+              }) ||
+                'Auto unload timeout cannot be less than 5 minutes, setting to 5 minutes'
+            );
+          }
+        }
+
+        await updateModel(getFormattedData(record));
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+      } catch (error) {
+        // ignore
+      }
+    },
+    [intl]
+  );
 
   const handleStartModel = async (row: ListItem) => {
     await updateModel(getFormattedData(row, { replicas: 1 }));
@@ -262,6 +298,24 @@ const Models: React.FC<ModelsProps> = ({
     await updateModel(getFormattedData(row, { replicas: 0 }));
     removeExpandedRowKey([row.id]);
   };
+
+  // 更新模型的最后请求时间
+  const updateLastRequestTime = useCallback(async (record: ListItem) => {
+    if (!record.last_request_time) {
+      try {
+        await updateModel(
+          getFormattedData(record, {
+            // 使用UTC时间格式，与数据库中的其他时间字段保持一致
+            last_request_time: dayjs().utc().format('YYYY-MM-DD HH:mm:ss')
+          })
+        );
+        // 静默更新，不显示成功消息
+      } catch (error) {
+        // 忽略错误
+        console.error('Failed to update last_request_time:', error);
+      }
+    }
+  }, []);
 
   const handleModalOk = useCallback(
     async (data: FormData) => {
@@ -606,13 +660,160 @@ const Models: React.FC<ModelsProps> = ({
     [handleSearch]
   );
 
+  const handleAutoUnloadToggle = useCallback(
+    async (checked: boolean, record: ListItem) => {
+      try {
+        const autoUnloadValue = checked ? 1 : 0;
+        await updateModel(
+          getFormattedData(record, { auto_unload: autoUnloadValue })
+        );
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error: any) {
+        if (
+          error?.response?.data?.detail?.includes(
+            'no such column: models.auto_unload'
+          )
+        ) {
+          message.warning(
+            'Auto unload feature requires database migration. Please contact administrator.'
+          );
+        } else {
+          message.error(intl.formatMessage({ id: 'common.message.failed' }));
+        }
+      }
+    },
+    [handleSearch]
+  );
+
+  const handleAutoLoadReplicasChange = useCallback(
+    async (value: number, record: ListItem) => {
+      // 确保值不小于1
+      const validValue = Math.max(1, value);
+
+      // 同步更新当前行的显示
+      record.auto_load_replicas = validValue;
+
+      try {
+        await updateModel(
+          getFormattedData(record, { auto_load_replicas: validValue })
+        );
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error: any) {
+        if (
+          error?.response?.data?.detail?.includes(
+            'no such column: models.auto_load_replicas'
+          )
+        ) {
+          message.warning(
+            'Auto load replicas feature requires database migration. Please contact administrator.'
+          );
+        } else {
+          message.error(intl.formatMessage({ id: 'common.message.failed' }));
+        }
+      }
+    },
+    [handleSearch, intl]
+  );
+
+  const handleAutoUnloadTimeoutChange = useCallback(
+    async (value: number, record: ListItem) => {
+      // 确保值不小于5
+      const validValue = Math.max(5, value);
+
+      // 同步更新当前行的显示
+      record.auto_unload_timeout = validValue;
+
+      try {
+        await updateModel(
+          getFormattedData(record, { auto_unload_timeout: validValue })
+        );
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error: any) {
+        if (
+          error?.response?.data?.detail?.includes(
+            'no such column: models.auto_unload_timeout'
+          )
+        ) {
+          message.warning(
+            'Auto unload timeout feature requires database migration. Please contact administrator.'
+          );
+        } else {
+          message.error(intl.formatMessage({ id: 'common.message.failed' }));
+        }
+      }
+    },
+    [handleSearch, intl]
+  );
+
+  // 计算正确的 unload 时间
+  const calculateUnloadTime = useCallback(
+    (record: ListItem): string | null => {
+      if (!record.auto_unload || !record.auto_unload_timeout) {
+        return null;
+      }
+
+      // 获取配置的超时时间（分钟）
+      const timeoutMinutes = record.auto_unload_timeout;
+
+      // 如果没有 last_request_time，直接返回配置的超时时间
+      if (!record.last_request_time) {
+        return `${timeoutMinutes}${intl.formatMessage({ id: 'common.text.minutes' })} 0${intl.formatMessage({ id: 'common.text.seconds' })}`;
+      }
+
+      try {
+        // 1. 将数据库中存储的UTC时间正确解析
+        const lastRequestTime = dayjs(record.last_request_time).utc();
+        // 2. 获取当前UTC时间，确保时区一致
+        const now = dayjs().utc();
+
+        // 3. 计算到期时间（在lastRequestTime基础上加上timeoutMinutes分钟）
+        const expiryTime = lastRequestTime.add(timeoutMinutes || 0, 'minute');
+
+        // 4. 计算剩余时间（毫秒）
+        const diffMs = Math.max(0, expiryTime.diff(now));
+
+        // 5. 转换为分钟和秒
+        const diffMinutes = Math.floor(diffMs / (60 * 1000));
+        const diffSeconds = Math.floor((diffMs % (60 * 1000)) / 1000);
+
+        if (diffMinutes === 0 && diffSeconds === 0) {
+          return intl.formatMessage({ id: 'models.form.waiting_unloading' });
+        }
+        // 格式化显示，只显示分钟和秒
+        return `${diffMinutes}${intl.formatMessage({ id: 'common.text.minutes' })} ${diffSeconds}${intl.formatMessage({ id: 'common.text.seconds' })}`;
+      } catch (error) {
+        console.error('Error calculating unload time:', error);
+        // 出错时显示配置的时间
+        return `${timeoutMinutes}${intl.formatMessage({ id: 'common.text.minutes' })} 0${intl.formatMessage({ id: 'common.text.seconds' })}`;
+      }
+    },
+    [intl]
+  );
+
+  // 添加自动倒计时功能
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    // 每秒更新一次倒计时
+    const timer = setInterval(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
   const columns: SealColumnProps[] = useMemo(() => {
     return [
       {
         title: intl.formatMessage({ id: 'common.table.name' }),
         dataIndex: 'name',
         key: 'name',
-        width: 300,
+        width: 350,
         span: 5,
         render: (text: string, record: ListItem) => (
           <span className="flex-center" style={{ maxWidth: '100%' }}>
@@ -628,7 +829,7 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'source',
         key: 'source',
         width: 250,
-        span: 5,
+        span: 2,
         render: (text: string, record: ListItem) => (
           <span className="flex flex-column" style={{ width: '100%' }}>
             <AutoTooltip ghost>{generateSource(record)}</AutoTooltip>
@@ -658,45 +859,157 @@ const Models: React.FC<ModelsProps> = ({
           valueType: 'number',
           title: intl.formatMessage({ id: 'models.table.replicas.edit' })
         },
-        render: (text: number, record: ListItem) => (
-          <span style={{ paddingLeft: 10, minWidth: '33px' }}>
-            {record.ready_replicas} / {record.replicas}
-          </span>
-        )
+        render: (text: number, record: ListItem) => {
+          // 当 auto_unload 开启且 ready_replicas >= 1 时显示倒计时
+          const shouldShowUnloadTime =
+            !!record.auto_unload && record.ready_replicas >= 1;
+
+          // 如果需要显示倒计时且 last_request_time 为 null，异步更新它
+          if (shouldShowUnloadTime && !record.last_request_time) {
+            updateLastRequestTime(record);
+          }
+
+          // 获取倒计时显示文本，使用 refreshTrigger 作为依赖项，确保每秒更新
+          const unloadTimeText = shouldShowUnloadTime
+            ? calculateUnloadTime(record)
+            : null;
+
+          return (
+            <div className="flex-column flex-center" style={{ gap: '4px' }}>
+              <span style={{ paddingLeft: 10, minWidth: '33px' }}>
+                {record.ready_replicas} / {record.replicas}
+              </span>
+              {unloadTimeText && (
+                <div
+                  className="flex-center"
+                  style={{
+                    lineHeight: '1',
+                    fontSize: '12px',
+                    color: '#ff7a45'
+                  }}
+                >
+                  {unloadTimeText}
+                </div>
+              )}
+            </div>
+          );
+        }
       },
       {
         title: (
           <Tooltip
             title={
               intl.formatMessage({ id: 'models.form.auto_load.tips' }) ||
-              'Whether to automatically load model when requests come in'
+              'Whether to automatically load model when API requests arrive'
             }
           >
             <span style={{ fontWeight: 'var(--font-weight-medium)' }}>
               {intl.formatMessage({ id: 'models.form.auto_load' }) ||
-                'Auto-load'}
+                'Auto Load'}
             </span>
             <QuestionCircleOutlined className="m-l-5" />
           </Tooltip>
         ),
-        dataIndex: 'auto_load',
+        dataIndex: 'auto_load_replicas',
         key: 'auto_load',
         align: 'center',
-        width: 120,
+        width: 130,
         span: 3,
-        render: (enabled: boolean | number, record: ListItem) => (
-          <Switch
-            checked={enabled === 1 || enabled === true}
-            size="small"
-            onChange={(checked) => handleAutoLoadToggle(checked, record)}
-            disabled={record.auto_load === undefined}
+        editable: {
+          valueType: 'number',
+          title:
+            intl.formatMessage({ id: 'models.form.auto_load_replicas' }) ||
+            'Auto Load Replicas'
+        },
+        render: (auto_load_replicas: number, record: ListItem) => {
+          // 确保显示值不小于1
+          const displayValue =
+            auto_load_replicas !== undefined
+              ? auto_load_replicas < 1
+                ? 1
+                : auto_load_replicas
+              : '-';
+
+          return (
+            <div className="flex-column flex-center" style={{ gap: '4px' }}>
+              <Switch
+                checked={!!record.auto_load}
+                size="small"
+                onChange={(checked) => handleAutoLoadToggle(checked, record)}
+                disabled={record.auto_load === undefined}
+                title={
+                  record.auto_load === undefined
+                    ? 'Auto-load feature requires database migration'
+                    : ''
+                }
+              />
+              <div
+                className="flex-center"
+                style={{ lineHeight: '1', fontSize: '12px' }}
+              >
+                <span>{displayValue}</span>
+              </div>
+            </div>
+          );
+        }
+      },
+      {
+        title: (
+          <Tooltip
             title={
-              record.auto_load === undefined
-                ? 'Auto-load feature requires database migration'
-                : ''
+              intl.formatMessage({ id: 'models.form.auto_unload.tips' }) ||
+              'Whether to automatically unload model when idle'
             }
-          />
-        )
+          >
+            <span style={{ fontWeight: 'var(--font-weight-medium)' }}>
+              {intl.formatMessage({ id: 'models.form.auto_unload' }) ||
+                'Auto-unload'}
+            </span>
+            <QuestionCircleOutlined className="m-l-5" />
+          </Tooltip>
+        ),
+        dataIndex: 'auto_unload_timeout',
+        key: 'auto_unload',
+        align: 'center',
+        width: 140,
+        span: 4,
+        editable: {
+          valueType: 'number',
+          title:
+            intl.formatMessage({ id: 'models.form.auto_unload_timeout' }) ||
+            'Unload Timeout (min)'
+        },
+        render: (auto_unload_timeout: number, record: ListItem) => {
+          // 确保显示值不小于1
+          const displayValue =
+            auto_unload_timeout !== undefined
+              ? auto_unload_timeout < 5
+                ? 5
+                : auto_unload_timeout
+              : '-';
+
+          return (
+            <div className="flex-column flex-center" style={{ gap: '4px' }}>
+              <Switch
+                checked={!!record.auto_unload}
+                size="small"
+                onChange={(checked) => handleAutoUnloadToggle(checked, record)}
+                disabled={record.auto_unload === undefined}
+                title={
+                  record.auto_unload === undefined
+                    ? 'Auto-unload feature requires database migration'
+                    : ''
+                }
+              />
+              <div
+                className="flex-center"
+                style={{ lineHeight: '1', fontSize: '12px' }}
+              >
+                <span>{displayValue}</span>
+              </div>
+            </div>
+          );
+        }
       },
       {
         title: intl.formatMessage({ id: 'common.table.createTime' }),
@@ -706,7 +1019,7 @@ const Models: React.FC<ModelsProps> = ({
         sortOrder,
         sorter: false,
         width: 180,
-        span: 4,
+        span: 2,
         render: (text: number) => (
           <AutoTooltip ghost>
             {dayjs(text).format('YYYY-MM-DD HH:mm:ss')}
@@ -727,7 +1040,18 @@ const Models: React.FC<ModelsProps> = ({
         )
       }
     ];
-  }, [sortOrder, intl, handleSelect, handleAutoLoadToggle]);
+  }, [
+    sortOrder,
+    intl,
+    handleSelect,
+    handleAutoLoadToggle,
+    handleAutoUnloadToggle,
+    handleAutoLoadReplicasChange,
+    handleAutoUnloadTimeoutChange,
+    updateLastRequestTime,
+    calculateUnloadTime,
+    refreshTrigger
+  ]);
 
   const handleOnClick = async () => {
     if (isLoading) {

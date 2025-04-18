@@ -233,5 +233,7 @@ export default {
   'common.appearance': '外观',
   'common.appearance.dark': '深色',
   'common.appearance.light': '浅色',
-  'common.appearance.system': '跟随系统'
+  'common.appearance.system': '跟随系统',
+  'common.text.minutes': '分',
+  'common.text.seconds': '秒'
 };

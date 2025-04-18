@@ -14,6 +14,7 @@ import {
   Collapse,
   Form,
   FormInstance,
+  Input,
   Tooltip,
   Typography
 } from 'antd';
@@ -76,6 +77,8 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
   const placement_strategy = Form.useWatch('placement_strategy', form);
   const gpuSelectorIds = Form.useWatch(['gpu_selector', 'gpu_ids'], form);
   const worker_selector = Form.useWatch('worker_selector', form);
+  const auto_load = Form.useWatch('auto_load', form);
+  const auto_unload = Form.useWatch('auto_unload', form);
   const { onValuesChange } = useFormContext();
 
   const placementStrategyTips = [
@@ -460,22 +463,136 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
           ></LabelSelector>
         </Form.Item>
 
-        <div style={{ paddingBottom: 22, paddingLeft: 10 }}>
-          <Form.Item<FormData>
-            name="auto_load"
-            valuePropName="checked"
-            style={{ padding: '0 10px', marginBottom: 0 }}
-            noStyle
-          >
-            <CheckboxField
-              title={intl.formatMessage({
-                id: 'models.form.auto_load.tips'
-              })}
-              label={intl.formatMessage({
-                id: 'models.form.auto_load'
-              })}
-            ></CheckboxField>
-          </Form.Item>
+        <div
+          style={{ display: 'flex', alignItems: 'center', paddingBottom: 22 }}
+        >
+          <div style={{ paddingLeft: 10 }}>
+            <Form.Item<FormData>
+              name="auto_load"
+              valuePropName="checked"
+              style={{ padding: '0 10px', marginBottom: 0 }}
+              noStyle
+            >
+              <CheckboxField
+                title={intl.formatMessage({
+                  id: 'models.form.auto_load.tips'
+                })}
+                label={intl.formatMessage({
+                  id: 'models.form.auto_load'
+                })}
+              ></CheckboxField>
+            </Form.Item>
+          </div>
+
+          {auto_load && (
+            <div
+              style={{ marginLeft: 20, display: 'flex', alignItems: 'center' }}
+            >
+              <span
+                style={{
+                  marginRight: 8,
+                  color: 'var(--ant-color-text-tertiary)',
+                  fontSize: '14px'
+                }}
+              >
+                {intl.formatMessage({ id: 'models.form.auto_load_replicas' }) ||
+                  'Auto Load Replicas'}
+                :
+              </span>
+              <Form.Item<FormData> name="auto_load_replicas" noStyle>
+                <Input
+                  style={{ width: 80 }}
+                  placeholder="1"
+                  type="number"
+                  min={1}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value < 1) {
+                      form.setFieldValue('auto_load_replicas', 1);
+                    }
+                  }}
+                />
+              </Form.Item>
+              <Tooltip
+                title={intl.formatMessage({
+                  id: 'models.form.auto_load_replicas.tips'
+                })}
+              >
+                <QuestionCircleOutlined
+                  className="m-l-4"
+                  style={{ color: 'var(--ant-color-text-tertiary)' }}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{ display: 'flex', alignItems: 'center', paddingBottom: 22 }}
+        >
+          <div style={{ paddingLeft: 10 }}>
+            <Form.Item<FormData>
+              name="auto_unload"
+              valuePropName="checked"
+              style={{ padding: '0 10px', marginBottom: 0 }}
+              noStyle
+            >
+              <CheckboxField
+                title={intl.formatMessage({
+                  id: 'models.form.auto_unload.tips'
+                })}
+                label={intl.formatMessage({
+                  id: 'models.form.auto_unload'
+                })}
+              ></CheckboxField>
+            </Form.Item>
+          </div>
+
+          {auto_unload && (
+            <div
+              style={{ marginLeft: 20, display: 'flex', alignItems: 'center' }}
+            >
+              <span
+                style={{
+                  marginRight: 8,
+                  color: 'var(--ant-color-text-tertiary)',
+                  fontSize: '14px'
+                }}
+              >
+                {intl.formatMessage({
+                  id: 'models.form.auto_unload_timeout'
+                }) || 'Timeout'}
+                :
+              </span>
+              <Form.Item<FormData> name="auto_unload_timeout" noStyle>
+                <Input
+                  style={{ width: 80 }}
+                  placeholder="120"
+                  suffix={
+                    intl.formatMessage({ id: 'common.text.minutes' }) || 'mins'
+                  }
+                  type="number"
+                  min={5}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value < 5) {
+                      form.setFieldValue('auto_unload_timeout', 5);
+                    }
+                  }}
+                />
+              </Form.Item>
+              <Tooltip
+                title={intl.formatMessage({
+                  id: 'models.form.auto_unload_timeout.tips'
+                })}
+              >
+                <QuestionCircleOutlined
+                  className="m-l-4"
+                  style={{ color: 'var(--ant-color-text-tertiary)' }}
+                />
+              </Tooltip>
+            </div>
+          )}
         </div>
 
         {backend === backendOptionsMap.llamaBox && (
@@ -569,7 +686,9 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     placement_strategy,
     gpuSelectorIds,
     EnviromentVars,
-    worker_selector
+    worker_selector,
+    auto_load,
+    auto_unload
   ]);
 
   return (

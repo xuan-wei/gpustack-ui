@@ -238,7 +238,9 @@ export default {
   'common.appearance': 'Appearance',
   'common.appearance.dark': 'Dark',
   'common.appearance.light': 'Light',
-  'common.appearance.system': 'System Default'
+  'common.appearance.system': 'System Default',
+  'common.text.minutes': '分',
+  'common.text.seconds': '秒'
 };
 
 // ========== To-Do: Translate Keys (Remove After Translation) ==========

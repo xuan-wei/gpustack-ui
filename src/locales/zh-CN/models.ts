@@ -143,6 +143,17 @@ export default {
   'models.search.parts': '{n} 个文件',
   'models.search.evaluate.error': '评估过程中发生了错误：',
   'models.form.auto_load': '自动加载',
+  'models.form.auto_load_replicas': '自动加载副本数',
+  'models.form.auto_load_replicas.min_warning':
+    '自动加载副本数不能小于1，设置为1',
   'models.form.auto_load.tips':
-    '启用后，当API请求到达时，该模型将自动加载。禁用时，您必须在使用前手动启动模型。'
+    '启用后，当API请求到达时，该模型将自动加载。禁用时，您必须在使用前手动启动模型。',
+  'models.form.auto_unload': '自动卸载',
+  'models.form.waiting_unloading': '等待卸载中...',
+  'models.form.auto_unload.tips': '当指定时间内没有请求时，模型将自动卸载。',
+  'models.form.auto_unload_timeout': '自动卸载超时',
+  'models.form.auto_unload_timeout.min_warning':
+    '自动卸载超时不能小于5分钟，设置为5分钟',
+  'models.form.auto_unload_timeout.tips':
+    '当指定时间内没有请求时，模型将自动卸载。'
 };
