@@ -580,7 +580,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
             </Form.Item>
           </div>
         )}
-        {scheduleType === 'auto' &&
+        {
           [
             backendOptionsMap.llamaBox,
             backendOptionsMap.vllm,
