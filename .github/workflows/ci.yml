@@ -9,6 +9,12 @@ on:
   pull_request:
     branches:
       - 'main'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Specify version name (e.g. latest, v1.0.0)'
+        required: true
+        default: 'latest'
 
 env:
   NODE_VERSION: '21'
@@ -69,14 +75,9 @@ jobs:
   build-publish:
     needs:
       - deps
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 30
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        version: ['latest', '${{ github.ref_name  }}']
-        exclude:
-          - version: 'main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,15 +96,14 @@ jobs:
       - name: Package
         run: scripts/package
         env:
-          VERSION: '${{ matrix.version }}'
-      - name: Release
-        uses: TencentCloud/cos-action@b0aa648235fb35a1bdd6a77f529eb0ac4c2f1c25
+          VERSION: '${{ github.event.inputs.version || github.ref_name }}'
+      - name: Copy to latest
+        run: cp dist/${{ github.event.inputs.version || github.ref_name }}.tar.gz dist/latest.tar.gz
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          secret_id: ${{ secrets.CI_TECENTCOS_SECRET_ID }}
-          secret_key: ${{ secrets.CI_TECENTCOS_SECRET_KEY }}
-          cos_bucket: ${{ secrets.COS_BUCKET }}
-          cos_region: ${{ secrets.COS_REGION }}
-          local_path: dist/${{ matrix.version }}.tar.gz
-          remote_path: releases/${{ matrix.version }}.tar.gz
-          accelerate: true
-          clean: false
+          files: |
+            dist/${{ github.event.inputs.version || github.ref_name }}.tar.gz
+            dist/latest.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
