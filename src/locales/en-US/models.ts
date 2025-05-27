@@ -149,6 +149,8 @@ export default {
   'models.table.apiAccessInfo.gotoCreate': 'Go to Create',
   'models.search.parts': '{n} parts',
   'models.search.evaluate.error': 'An error occurred during evaluation: ',
+  'models.table.avg_request_rate': 'Avg Request Rate',
+  'models.table.avg_process_rate': 'Avg Process Rate',
   'models.form.auto_load': 'Auto Load',
   'models.form.auto_load_replicas': 'Auto Load Replicas',
   'models.form.auto_load_replicas.min_warning':

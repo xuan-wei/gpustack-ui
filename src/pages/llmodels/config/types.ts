@@ -20,6 +20,8 @@ export interface ListItem {
   auto_load_replicas?: number;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
+  avg_request_rate?: number;
+  avg_process_rate?: number;
   s3Address: string;
   name: string;
   description: string;
@@ -47,6 +49,8 @@ export interface FormData {
   auto_load_replicas?: number;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
+  avg_request_rate?: number;
+  avg_process_rate?: number;
   env?: Record<string, any>;
   size?: number;
   quantization?: number;
@@ -181,6 +185,8 @@ export interface CatalogSpec {
   auto_load_replicas?: number;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
+  avg_request_rate?: number;
+  avg_process_rate?: number;
   last_request_time?: string;
   categories: any[];
   placement_strategy: string;

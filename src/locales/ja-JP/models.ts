@@ -147,8 +147,10 @@ export default {
   'models.table.apiAccessInfo.openaiCompatible': 'OpenAI互換',
   'models.table.apiAccessInfo.jinaCompatible': 'Jina互換',
   'models.table.apiAccessInfo.gotoCreate': '作成に移動',
-  'models.search.parts': '{n} 部分',
+  'models.search.parts': '{n} パーツ',
   'models.search.evaluate.error': '評価中にエラーが発生しました: ',
+  'models.table.avg_request_rate': '平均リクエスト率',
+  'models.table.avg_process_rate': '平均処理率',
   'models.form.auto_load': '自動読み込み',
   'models.form.auto_load_replicas': '自動読み込みレプリカ',
   'models.form.auto_load_replicas.min_warning':

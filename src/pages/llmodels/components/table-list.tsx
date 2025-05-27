@@ -119,6 +119,8 @@ const getFormattedData = (record: any, extraData = {}) => ({
       'created_at',
       'updated_at',
       'last_request_time',
+      'avg_request_rate',
+      'avg_process_rate',
       'rowIndex'
     ]),
     ...extraData
@@ -874,11 +876,53 @@ const Models: React.FC<ModelsProps> = ({
             ? calculateUnloadTime(record)
             : null;
 
+          // 构建tooltip内容，始终显示副本数信息，如果有平均请求率和处理率则也显示
+          const tooltipContent = (
+            <div style={{ fontSize: '12px' }}>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>
+                  {intl.formatMessage({ id: 'models.form.replicas' })}:{' '}
+                </strong>
+                {record.ready_replicas} / {record.replicas}
+              </div>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>
+                  {intl.formatMessage({
+                    id: 'models.table.avg_request_rate'
+                  }) || 'Avg Request Rate'}
+                  :
+                </strong>
+                {record.avg_request_rate !== undefined
+                  ? `${record.avg_request_rate}/min`
+                  : 'N/A'}
+              </div>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>
+                  {intl.formatMessage({
+                    id: 'models.table.avg_process_rate'
+                  }) || 'Avg Process Rate'}
+                  :
+                </strong>
+                {record.avg_process_rate !== undefined
+                  ? `${record.avg_process_rate}/min`
+                  : 'N/A'}
+              </div>
+            </div>
+          );
+
           return (
             <div className="flex-column flex-center" style={{ gap: '4px' }}>
-              <span style={{ paddingLeft: 10, minWidth: '33px' }}>
-                {record.ready_replicas} / {record.replicas}
-              </span>
+              <Tooltip title={tooltipContent} placement="top">
+                <span
+                  style={{
+                    paddingLeft: 10,
+                    minWidth: '33px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {record.ready_replicas} / {record.replicas}
+                </span>
+              </Tooltip>
               {unloadTimeText && (
                 <div
                   className="flex-center"

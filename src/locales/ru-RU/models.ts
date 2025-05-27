@@ -149,7 +149,9 @@ export default {
   'models.table.apiAccessInfo.jinaCompatible': 'Совместимо с Jina',
   'models.table.apiAccessInfo.gotoCreate': 'Перейти к созданию',
   'models.search.parts': '{n} частей',
-  'models.search.evaluate.error': 'Возникла ошибка при вычислении: ',
+  'models.search.evaluate.error': 'Произошла ошибка во время оценки: ',
+  'models.table.avg_request_rate': 'Ср. частота запросов',
+  'models.table.avg_process_rate': 'Ср. скорость обработки',
   'models.form.auto_load': 'Автозагрузка',
   'models.form.auto_load_replicas': 'Автозагрузка реплик',
   'models.form.auto_load_replicas.min_warning':
