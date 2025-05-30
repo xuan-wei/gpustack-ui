@@ -7,6 +7,7 @@ import { IS_FIRST_LOGIN, readState } from '@/utils/localstore';
 import _ from 'lodash';
 import qs from 'query-string';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import styled from 'styled-components';
 import {
   MODELS_API,
   MODEL_INSTANCE_API,
@@ -19,6 +20,13 @@ import TableList from './components/table-list';
 import { backendOptionsMap } from './config';
 import { ListItem } from './config/types';
 import { useGenerateModelFileOptions } from './hooks';
+
+const Wrapper = styled.div`
+  .seal-table-container {
+    overflow-x: auto;
+    min-width: 1400px; /* 增加最小宽度以适应新增的列 */
+  }
+`;
 
 const Models: React.FC = () => {
   const { getModelFileList, generateModelFileOptions } =
@@ -460,6 +468,7 @@ const Models: React.FC = () => {
         setDisableExpand: setDisableExpand
       }}
     >
+      <Wrapper>
       <TableList
         dataSource={dataSource.dataList}
         handleNameChange={handleNameChange}
@@ -481,6 +490,7 @@ const Models: React.FC = () => {
         modelFileOptions={modelFileOptions}
         catalogList={catalogList}
       ></TableList>
+      </Wrapper>
     </TableContext.Provider>
   );
 };
