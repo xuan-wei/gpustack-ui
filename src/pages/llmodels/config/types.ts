@@ -18,8 +18,12 @@ export interface ListItem {
   replicas: number;
   auto_load?: boolean;
   auto_load_replicas?: number;
+  auto_adjust_replicas?: boolean;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
+  avg_request_rate?: number;
+  avg_process_rate?: number;
+  last_scale_time?: string;
   s3Address: string;
   name: string;
   description: string;
@@ -45,6 +49,7 @@ export interface FormData {
   restart_on_error?: boolean;
   auto_load?: boolean;
   auto_load_replicas?: number;
+  auto_adjust_replicas?: boolean;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
   env?: Record<string, any>;
@@ -179,6 +184,7 @@ export interface CatalogSpec {
   ready_replicas: number;
   auto_load?: boolean;
   auto_load_replicas?: number;
+  auto_adjust_replicas?: boolean;
   auto_unload?: boolean;
   auto_unload_timeout?: number;
   last_request_time?: string;
@@ -211,6 +217,7 @@ export interface EvaluateSpec {
   replicas?: number;
   ready_replicas?: number;
   auto_load?: boolean;
+  auto_adjust_replicas?: boolean;
   categories?: any[];
   placement_strategy?: string;
   cpu_offloading?: boolean;

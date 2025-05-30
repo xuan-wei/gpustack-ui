@@ -157,31 +157,27 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
     onValuesChange?.(changedValues, allValues);
   };
 
-  useImperativeHandle(
-    ref,
-    () => {
-      return {
-        form: form,
-        submit: handleSumit,
-        resetFields: (fields: any[]) => {
-          form.resetFields(fields);
-        },
-        setFieldsValue: (values: FormData) => {
-          form.setFieldsValue(values);
-        },
-        setFieldValue: (name: string, value: any) => {
-          form.setFieldValue(name, value);
-        },
-        getFieldValue: (name: string) => {
-          return form.getFieldValue(name);
-        },
-        getFieldsValue: () => {
-          return form.getFieldsValue();
-        }
-      };
-    },
-    []
-  );
+  useImperativeHandle(ref, () => {
+    return {
+      form: form,
+      submit: handleSumit,
+      resetFields: (fields: any[]) => {
+        form.resetFields(fields);
+      },
+      setFieldsValue: (values: FormData) => {
+        form.setFieldsValue(values);
+      },
+      setFieldValue: (name: string, value: any) => {
+        form.setFieldValue(name, value);
+      },
+      getFieldValue: (name: string) => {
+        return form.getFieldValue(name);
+      },
+      getFieldsValue: () => {
+        return form.getFieldsValue();
+      }
+    };
+  }, []);
 
   return (
     <Form
@@ -197,11 +193,14 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
         replicas: 1,
         source: props.source,
         placement_strategy: 'spread',
-        cpu_offloading: true,
+        cpu_offloading: false,
         scheduleType: 'auto',
         categories: null,
         restart_on_error: true,
-        distributed_inference_across_workers: true,
+        distributed_inference_across_workers: false,
+        auto_load: true,
+        auto_unload: true,
+        auto_unload_timeout: 10,
         ...initialValues
       }}
     >

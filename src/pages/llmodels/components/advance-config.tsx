@@ -49,9 +49,15 @@ const CheckboxField: React.FC<{
   label: string;
   checked?: boolean;
   onChange?: (e: CheckboxChangeEvent) => void;
-}> = ({ title, label, checked, onChange }) => {
+  disabled?: boolean;
+}> = ({ title, label, checked, onChange, disabled }) => {
   return (
-    <Checkbox className="p-l-6" checked={checked} onChange={onChange}>
+    <Checkbox
+      className="p-l-6"
+      checked={checked}
+      onChange={onChange}
+      disabled={disabled}
+    >
       <Tooltip title={title}>
         <span style={{ color: 'var(--ant-color-text-tertiary)' }}>{label}</span>
         <QuestionCircleOutlined
@@ -78,6 +84,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
   const gpuSelectorIds = Form.useWatch(['gpu_selector', 'gpu_ids'], form);
   const worker_selector = Form.useWatch('worker_selector', form);
   const auto_load = Form.useWatch('auto_load', form);
+  const auto_adjust_replicas = Form.useWatch('auto_adjust_replicas', form);
   const auto_unload = Form.useWatch('auto_unload', form);
   const { onValuesChange } = useFormContext();
 
@@ -165,6 +172,30 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
       form.setFieldValue('env', labels);
     },
     []
+  );
+
+  const handleAutoLoadChange = useCallback(
+    (e: CheckboxChangeEvent) => {
+      const checked = e.target.checked;
+      form.setFieldValue('auto_load', checked);
+
+      // 如果关闭 auto_load，同时关闭 auto_adjust_replicas
+      if (!checked) {
+        form.setFieldValue('auto_adjust_replicas', false);
+      }
+
+      onValuesChange?.({}, form.getFieldsValue());
+    },
+    [form, onValuesChange]
+  );
+
+  const handleAutoAdjustReplicasChange = useCallback(
+    (e: CheckboxChangeEvent) => {
+      const checked = e.target.checked;
+      form.setFieldValue('auto_adjust_replicas', checked);
+      onValuesChange?.({}, form.getFieldsValue());
+    },
+    [form, onValuesChange]
   );
 
   const handleBackendParametersChange = useCallback((list: string[]) => {
@@ -480,6 +511,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
                 label={intl.formatMessage({
                   id: 'models.form.auto_load'
                 })}
+                onChange={handleAutoLoadChange}
               ></CheckboxField>
             </Form.Item>
           </div>
@@ -527,6 +559,26 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
           )}
         </div>
 
+        <div style={{ paddingBottom: 22, paddingLeft: 10 }}>
+          <Form.Item<FormData>
+            name="auto_adjust_replicas"
+            valuePropName="checked"
+            style={{ padding: '0 10px', marginBottom: 0 }}
+            noStyle
+          >
+            <CheckboxField
+              title={intl.formatMessage({
+                id: 'models.form.auto_adjust_replicas.tips'
+              })}
+              label={intl.formatMessage({
+                id: 'models.form.auto_adjust_replicas'
+              })}
+              onChange={handleAutoAdjustReplicasChange}
+              disabled={!auto_load}
+            ></CheckboxField>
+          </Form.Item>
+        </div>
+
         <div
           style={{ display: 'flex', alignItems: 'center', paddingBottom: 22 }}
         >
@@ -567,7 +619,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
               <Form.Item<FormData> name="auto_unload_timeout" noStyle>
                 <Input
                   style={{ width: 80 }}
-                  placeholder="120"
+                  placeholder="10"
                   suffix={
                     intl.formatMessage({ id: 'common.text.minutes' }) || 'mins'
                   }
@@ -687,6 +739,7 @@ const AdvanceConfig: React.FC<AdvanceConfigProps> = (props) => {
     EnviromentVars,
     worker_selector,
     auto_load,
+    auto_adjust_replicas,
     auto_unload
   ]);
 

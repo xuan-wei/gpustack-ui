@@ -147,14 +147,19 @@ export default {
   'models.table.apiAccessInfo.openaiCompatible': 'OpenAI互換',
   'models.table.apiAccessInfo.jinaCompatible': 'Jina互換',
   'models.table.apiAccessInfo.gotoCreate': '作成に移動',
-  'models.search.parts': '{n} 部分',
+  'models.search.parts': '{n} パーツ',
   'models.search.evaluate.error': '評価中にエラーが発生しました: ',
+  'models.table.avg_request_rate': 'リクエスト率',
+  'models.table.avg_process_rate': '処理率',
   'models.form.auto_load': '自動読み込み',
   'models.form.auto_load_replicas': '自動読み込みレプリカ',
   'models.form.auto_load_replicas.min_warning':
     '自動読み込みレプリカは1以上でなければなりません。1に設定します。',
   'models.form.auto_load.tips':
     'APIリクエストが到着すると自動的に読み込まれます。無効にすると、使用する前に手動でモデルを起動する必要があります。',
+  'models.form.auto_adjust_replicas': '自動調整レプリカ #',
+  'models.form.auto_adjust_replicas.tips':
+    '有効にすると、過去2分間の需要/供給の関係に基づいてレプリカ数が自動的に調整されます。',
   'models.form.auto_unload': '自動オフロード',
   'models.form.waiting_unloading': 'アンロード待ち...',
   'models.form.auto_unload.tips':

@@ -638,9 +638,16 @@ const Models: React.FC<ModelsProps> = ({
     async (checked: boolean, record: ListItem) => {
       try {
         const autoLoadValue = checked ? 1 : 0;
-        await updateModel(
-          getFormattedData(record, { auto_load: autoLoadValue })
-        );
+
+        // 准备更新数据
+        const updateData: any = { auto_load: autoLoadValue };
+
+        // 如果关闭 auto_load，同时关闭 auto_adjust_replicas
+        if (!checked && record.auto_adjust_replicas !== undefined) {
+          updateData.auto_adjust_replicas = 0;
+        }
+
+        await updateModel(getFormattedData(record, updateData));
         message.success(intl.formatMessage({ id: 'common.message.success' }));
         handleSearch();
       } catch (error: any) {
@@ -677,6 +684,32 @@ const Models: React.FC<ModelsProps> = ({
         ) {
           message.warning(
             'Auto unload feature requires database migration. Please contact administrator.'
+          );
+        } else {
+          message.error(intl.formatMessage({ id: 'common.message.failed' }));
+        }
+      }
+    },
+    [handleSearch]
+  );
+
+  const handleAutoAdjustToggle = useCallback(
+    async (checked: boolean, record: ListItem) => {
+      try {
+        const autoAdjustValue = checked ? 1 : 0;
+        await updateModel(
+          getFormattedData(record, { auto_adjust_replicas: autoAdjustValue })
+        );
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error: any) {
+        if (
+          error?.response?.data?.detail?.includes(
+            'no such column: models.auto_adjust_replicas'
+          )
+        ) {
+          message.warning(
+            'Auto adjust replicas feature requires database migration. Please contact administrator.'
           );
         } else {
           message.error(intl.formatMessage({ id: 'common.message.failed' }));
@@ -814,7 +847,7 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'name',
         key: 'name',
         width: 350,
-        span: 5,
+        span: 4,
         render: (text: string, record: ListItem) => (
           <span className="flex-center" style={{ maxWidth: '100%' }}>
             <AutoTooltip ghost>
@@ -854,7 +887,7 @@ const Models: React.FC<ModelsProps> = ({
         key: 'replicas',
         align: 'center',
         width: 100,
-        span: 3,
+        span: 2,
         editable: {
           valueType: 'number',
           title: intl.formatMessage({ id: 'models.table.replicas.edit' })
@@ -914,7 +947,7 @@ const Models: React.FC<ModelsProps> = ({
         key: 'auto_load',
         align: 'center',
         width: 130,
-        span: 3,
+        span: 2,
         editable: {
           valueType: 'number',
           title:
@@ -957,6 +990,75 @@ const Models: React.FC<ModelsProps> = ({
         title: (
           <Tooltip
             title={
+              intl.formatMessage({
+                id: 'models.form.auto_adjust_replicas.tips'
+              }) || 'Automatically adjust replicas based on request rate'
+            }
+          >
+            <span style={{ fontWeight: 'var(--font-weight-medium)' }}>
+              {intl.formatMessage({ id: 'models.form.auto_adjust_replicas' }) ||
+                'Auto Adjust Replicas'}
+            </span>
+            <QuestionCircleOutlined className="m-l-5" />
+          </Tooltip>
+        ),
+        dataIndex: 'auto_adjust_replicas',
+        key: 'auto_adjust_replicas',
+        align: 'center',
+        width: 180,
+        span: 3,
+        render: (text: any, record: ListItem) => {
+          return (
+            <div className="flex-column flex-center" style={{ gap: '4px' }}>
+              <Switch
+                checked={!!record.auto_adjust_replicas}
+                size="small"
+                onChange={(checked) => handleAutoAdjustToggle(checked, record)}
+                disabled={record.auto_adjust_replicas === undefined}
+                title={
+                  record.auto_adjust_replicas === undefined
+                    ? 'Auto adjust replicas feature requires database migration'
+                    : ''
+                }
+              />
+              <div
+                style={{
+                  fontSize: '10px',
+                  lineHeight: '1.2',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ color: '#666' }}>
+                  <span style={{ fontWeight: '500' }}>
+                    {intl.formatMessage({
+                      id: 'models.table.avg_request_rate'
+                    }) || 'Avg Request Rate'}
+                    :
+                  </span>{' '}
+                  {record.avg_request_rate !== undefined
+                    ? `${record.avg_request_rate.toFixed(1).padStart(5)}/min`
+                    : 'N/A'}
+                </div>
+                <div style={{ color: '#666' }}>
+                  <span style={{ fontWeight: '500' }}>
+                    {intl.formatMessage({
+                      id: 'models.table.avg_process_rate'
+                    }) || 'Avg Process Rate'}
+                    :
+                  </span>{' '}
+                  {record.avg_process_rate !== undefined
+                    ? `${record.avg_process_rate.toFixed(1).padStart(5)}/min`
+                    : 'N/A'}
+                </div>
+              </div>
+            </div>
+          );
+        }
+      },
+      {
+        title: (
+          <Tooltip
+            title={
               intl.formatMessage({ id: 'models.form.auto_unload.tips' }) ||
               'Whether to automatically unload model when idle'
             }
@@ -972,7 +1074,7 @@ const Models: React.FC<ModelsProps> = ({
         key: 'auto_unload',
         align: 'center',
         width: 140,
-        span: 4,
+        span: 3,
         editable: {
           valueType: 'number',
           title:
@@ -1031,7 +1133,7 @@ const Models: React.FC<ModelsProps> = ({
         key: 'operation',
         dataIndex: 'operation',
         width: 120,
-        span: 3,
+        span: 2,
         render: (text, record) => (
           <DropdownButtons
             items={setModelActionList(record)}
@@ -1045,6 +1147,7 @@ const Models: React.FC<ModelsProps> = ({
     intl,
     handleSelect,
     handleAutoLoadToggle,
+    handleAutoAdjustToggle,
     handleAutoUnloadToggle,
     handleAutoLoadReplicasChange,
     handleAutoUnloadTimeoutChange,

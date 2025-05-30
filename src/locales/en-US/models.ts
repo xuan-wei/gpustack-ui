@@ -149,12 +149,17 @@ export default {
   'models.table.apiAccessInfo.gotoCreate': 'Go to Create',
   'models.search.parts': '{n} parts',
   'models.search.evaluate.error': 'An error occurred during evaluation: ',
+  'models.table.avg_request_rate': 'Request Rate',
+  'models.table.avg_process_rate': 'Process Rate',
   'models.form.auto_load': 'Auto Load',
   'models.form.auto_load_replicas': 'Auto Load Replicas',
   'models.form.auto_load_replicas.min_warning':
     'Auto load replicas cannot be less than 1, setting to 1',
   'models.form.auto_load.tips':
     'When enabled, this model will automatically load when API requests arrive. When disabled, you must manually start the model before using it.',
+  'models.form.auto_adjust_replicas': 'Auto Adjust Replicas No.',
+  'models.form.auto_adjust_replicas.tips':
+    'When enabled, the number of replicas will be automatically adjusted based on the demand/supply relationship over the past 2 minutes.',
   'models.form.auto_unload': 'Auto Unload',
   'models.form.waiting_unloading': 'Waiting for Unloading...',
   'models.form.auto_unload.tips':

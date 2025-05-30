@@ -589,10 +589,26 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                   <span className="m-r-5">{instanceData.name}</span>
                 </AutoTooltip>
                 {!!instanceData.worker_id && (
-                  <WorkerInfo
-                    title={renderWorkerInfo}
-                    defaultOpen={defaultOpenId === instanceData.name}
-                  ></WorkerInfo>
+                  <>
+                    <span
+                      className="flex-center"
+                      style={{
+                        color: 'var(--ant-color-text-secondary)',
+                        fontSize: '12px',
+                        marginRight: '8px'
+                      }}
+                    >
+                      <span className="m-r-5">
+                        ({instanceData.worker_name})
+                      </span>
+                      <IconFont type="icon-filled-gpu" className="m-r-5" />[
+                      {_.join(instanceData.gpu_indexes?.sort?.(), ',')}]
+                    </span>
+                    <WorkerInfo
+                      title={renderWorkerInfo}
+                      defaultOpen={defaultOpenId === instanceData.name}
+                    ></WorkerInfo>
+                  </>
                 )}
               </span>
             </Col>
