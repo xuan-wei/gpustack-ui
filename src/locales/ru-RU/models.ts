@@ -1,10 +1,15 @@
 export default {
+  'models.table.avg_request_rate': 'частота запросов',
+  'models.table.avg_process_rate': 'скорость обработки',
   'models.form.auto_load': 'Автозагрузка',
   'models.form.auto_load_replicas': 'Автозагрузка реплик',
   'models.form.auto_load_replicas.min_warning':
     'Автозагрузка реплик не может быть меньше 1, установлено значение 1',
   'models.form.auto_load.tips':
     'При включении модель будет автоматически загружаться при поступлении запросов API. При отключении необходимо вручную запустить модель перед использованием.',
+  'models.form.auto_adjust_replicas': 'Автоматическое регулирование реплик #',
+  'models.form.auto_adjust_replicas.tips':
+    'При включении количество реплик будет автоматически регулироваться в зависимости от спроса/предложения за последние 2 минуты.',
   'models.form.auto_unload': 'Автоотключение',
   'models.form.waiting_unloading': 'Ожидание отключения...',
   'models.form.auto_unload.tips':
