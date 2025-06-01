@@ -24,6 +24,7 @@ export interface ListItem {
   avg_request_rate?: number;
   avg_process_rate?: number;
   last_scale_time?: string;
+  last_scale_message?: string;
   s3Address: string;
   name: string;
   description: string;

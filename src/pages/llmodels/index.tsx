@@ -24,7 +24,7 @@ import { useGenerateModelFileOptions } from './hooks';
 const Wrapper = styled.div`
   .seal-table-container {
     overflow-x: auto;
-    min-width: 1400px; /* 增加最小宽度以适应新增的列 */
+    min-width: 1600px; /* 增加最小宽度以适应新增的列 */
   }
 `;
 
