@@ -151,6 +151,9 @@ export default {
   'models.search.evaluate.error': 'An error occurred during evaluation: ',
   'models.table.avg_request_rate': 'Request Rate',
   'models.table.avg_process_rate': 'Process Rate',
+  'models.table.request_process_rate': 'Request/Process Rate',
+  'models.table.request_process_rate.tips':
+    'Calculate request rate and process rate based on request and processing data from the past 2 minutes (updated every 15 seconds)',
   'models.form.auto_load': 'Auto Load',
   'models.form.auto_load_replicas': 'Auto Load Replicas',
   'models.form.auto_load_replicas.min_warning':
@@ -159,7 +162,12 @@ export default {
     'When enabled, this model will automatically load when API requests arrive. When disabled, you must manually start the model before using it.',
   'models.form.auto_adjust_replicas': 'Auto Adjust Replicas No.',
   'models.form.auto_adjust_replicas.tips':
-    'When enabled, the number of replicas will be automatically adjusted based on the demand/supply relationship over the past 2 minutes.',
+    'When enabled, the number of replicas will be automatically adjusted based on the demand/supply relationship over the past 2 minutes (every 60 seconds, with a maximum adjustment of 1 replica up or down each time)',
+  'models.form.waiting_first_scaling': 'Waiting for first auto scaling',
+  'models.form.checking_replicas_change': 'Checking replicas change...',
+  'models.form.replicas_change_increase': 'Replicas +{count}',
+  'models.form.replicas_change_decrease': 'Replicas -{count}',
+  'models.form.replicas_change_no_change': 'No replicas change',
   'models.form.auto_unload': 'Auto Unload',
   'models.form.waiting_unloading': 'Waiting for Unloading...',
   'models.form.auto_unload.tips':

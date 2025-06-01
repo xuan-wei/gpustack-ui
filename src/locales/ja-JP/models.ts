@@ -151,6 +151,9 @@ export default {
   'models.search.evaluate.error': '評価中にエラーが発生しました: ',
   'models.table.avg_request_rate': 'リクエスト率',
   'models.table.avg_process_rate': '処理率',
+  'models.table.request_process_rate': 'リクエスト/処理率',
+  'models.table.request_process_rate.tips':
+    '過去2分間のリクエストと処理データに基づいてリクエスト率と処理率を計算（15秒ごとに更新）',
   'models.form.auto_load': '自動読み込み',
   'models.form.auto_load_replicas': '自動読み込みレプリカ',
   'models.form.auto_load_replicas.min_warning':
@@ -159,7 +162,12 @@ export default {
     'APIリクエストが到着すると自動的に読み込まれます。無効にすると、使用する前に手動でモデルを起動する必要があります。',
   'models.form.auto_adjust_replicas': '自動調整レプリカ #',
   'models.form.auto_adjust_replicas.tips':
-    '有効にすると、過去2分間の需要/供給の関係に基づいてレプリカ数が自動的に調整されます。',
+    '有効にすると、過去2分間の需要/供給の関係に基づいてレプリカ数が自動的に調整されます（60秒ごとに実行、毎回最大1つのレプリカを上下に調整）',
+  'models.form.waiting_first_scaling': '初回自動スケーリング待ち',
+  'models.form.checking_replicas_change': 'レプリカ変更を確認中...',
+  'models.form.replicas_change_increase': 'レプリカ +{count}',
+  'models.form.replicas_change_decrease': 'レプリカ -{count}',
+  'models.form.replicas_change_no_change': 'レプリカ変更なし',
   'models.form.auto_unload': '自動オフロード',
   'models.form.waiting_unloading': 'アンロード待ち...',
   'models.form.auto_unload.tips':

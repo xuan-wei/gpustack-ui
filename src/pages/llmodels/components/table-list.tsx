@@ -211,6 +211,9 @@ const Models: React.FC<ModelsProps> = ({
   });
   const modalRef = useRef<any>(null);
 
+  // 添加自动倒计时功能
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     if (!catalogList?.length) {
       return;
@@ -826,8 +829,114 @@ const Models: React.FC<ModelsProps> = ({
     [intl]
   );
 
-  // 添加自动倒计时功能
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // 计算下次scaling的时间
+  const calculateNextScaleTime = useCallback(
+    (record: ListItem): string | React.ReactElement | null => {
+      if (!record.auto_adjust_replicas) {
+        return null;
+      }
+
+      try {
+        // 如果没有 last_scale_time，说明还没有进行过scaling，返回等待状态
+        if (!record.last_scale_time) {
+          return (
+            intl.formatMessage({ id: 'models.form.waiting_first_scaling' }) ||
+            'Waiting for first auto scaling'
+          );
+        }
+
+        // 1. 将数据库中存储的UTC时间正确解析
+        const lastScaleTime = dayjs(record.last_scale_time).utc();
+        // 2. 获取当前UTC时间，确保时区一致
+        const now = dayjs().utc();
+
+        // 3. 计算自上次scaling以来过了多少秒
+        const elapsedSeconds = now.diff(lastScaleTime, 'second');
+
+        // 4. ≥60.5秒，显示等待第一次自动调整。 # 0.5秒考虑时间误差
+        if (elapsedSeconds >= 60.5) {
+          return (
+            intl.formatMessage({ id: 'models.form.waiting_first_scaling' }) ||
+            'Waiting for first auto scaling'
+          );
+        }
+
+        // 5. 0-1秒，显示"获取数据中"
+        if (elapsedSeconds >= 0 && elapsedSeconds < 1) {
+          return (
+            intl.formatMessage({
+              id: 'models.form.checking_replicas_change'
+            }) || 'Checking replicas change...'
+          );
+        }
+
+        // 6. 1-5秒，显示scaling详细信息
+        if (elapsedSeconds >= 1 && elapsedSeconds <= 5) {
+          if (record.last_scale_message) {
+            try {
+              // 解析last_scale_message，格式应该是："requestRate,processRate,previousReplicas,newReplicas"
+              const parts = record.last_scale_message.split(',');
+              if (parts.length >= 4) {
+                const requestRate = parts[0];
+                const processRate = parts[1];
+                const previousReplicas = parts[2];
+                const newReplicas = parts[3];
+
+                const requestRateText =
+                  intl.formatMessage({ id: 'models.table.avg_request_rate' }) ||
+                  'Request Rate';
+                const processRateText =
+                  intl.formatMessage({ id: 'models.table.avg_process_rate' }) ||
+                  'Process Rate';
+                const replicasText =
+                  intl.formatMessage({ id: 'models.form.replicas' }) ||
+                  'Replicas';
+
+                return (
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      lineHeight: '1.2',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>
+                      {requestRateText}：{requestRate}/min
+                    </div>
+                    <div>
+                      {processRateText}：{processRate}/min
+                    </div>
+                    <div>
+                      {replicasText}：{previousReplicas} → {newReplicas}
+                    </div>
+                  </div>
+                );
+              }
+            } catch (error) {
+              console.error('Error parsing last_scale_message:', error);
+            }
+          }
+          // 如果没有last_scale_message或解析失败，显示默认信息
+          return (
+            intl.formatMessage({
+              id: 'models.form.replicas_change_no_change'
+            }) || 'No replicas change'
+          );
+        }
+
+        // 7. 5-60秒，显示倒计时
+        const remainingSeconds = 60 - elapsedSeconds;
+        return `${Math.max(0, remainingSeconds)}${intl.formatMessage({ id: 'common.text.seconds' }) || 's'}`;
+      } catch (error) {
+        console.error('Error calculating next scale time:', error);
+        return (
+          intl.formatMessage({ id: 'models.form.waiting_first_scaling' }) ||
+          'Waiting for first auto scaling'
+        );
+      }
+    },
+    [intl]
+  );
 
   useEffect(() => {
     // 每秒更新一次倒计时
@@ -846,7 +955,7 @@ const Models: React.FC<ModelsProps> = ({
         title: intl.formatMessage({ id: 'common.table.name' }),
         dataIndex: 'name',
         key: 'name',
-        width: 350,
+        width: 300,
         span: 4,
         render: (text: string, record: ListItem) => (
           <span className="flex-center" style={{ maxWidth: '100%' }}>
@@ -861,7 +970,7 @@ const Models: React.FC<ModelsProps> = ({
         title: intl.formatMessage({ id: 'models.form.source' }),
         dataIndex: 'source',
         key: 'source',
-        width: 250,
+        width: 200,
         span: 2,
         render: (text: string, record: ListItem) => (
           <span className="flex flex-column" style={{ width: '100%' }}>
@@ -886,44 +995,18 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'replicas',
         key: 'replicas',
         align: 'center',
-        width: 100,
+        width: 120,
         span: 2,
         editable: {
           valueType: 'number',
           title: intl.formatMessage({ id: 'models.table.replicas.edit' })
         },
         render: (text: number, record: ListItem) => {
-          // 当 auto_unload 开启且 ready_replicas >= 1 时显示倒计时
-          const shouldShowUnloadTime =
-            !!record.auto_unload && record.ready_replicas >= 1;
-
-          // 如果需要显示倒计时且 last_request_time 为 null，异步更新它
-          if (shouldShowUnloadTime && !record.last_request_time) {
-            updateLastRequestTime(record);
-          }
-
-          // 获取倒计时显示文本，使用 refreshTrigger 作为依赖项，确保每秒更新
-          const unloadTimeText = shouldShowUnloadTime
-            ? calculateUnloadTime(record)
-            : null;
-
           return (
             <div className="flex-column flex-center" style={{ gap: '4px' }}>
               <span style={{ paddingLeft: 10, minWidth: '33px' }}>
                 {record.ready_replicas} / {record.replicas}
               </span>
-              {unloadTimeText && (
-                <div
-                  className="flex-center"
-                  style={{
-                    lineHeight: '1',
-                    fontSize: '12px',
-                    color: '#ff7a45'
-                  }}
-                >
-                  {unloadTimeText}
-                </div>
-              )}
             </div>
           );
         }
@@ -946,7 +1029,7 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'auto_load_replicas',
         key: 'auto_load',
         align: 'center',
-        width: 130,
+        width: 120,
         span: 2,
         editable: {
           valueType: 'number',
@@ -991,6 +1074,64 @@ const Models: React.FC<ModelsProps> = ({
           <Tooltip
             title={
               intl.formatMessage({
+                id: 'models.table.request_process_rate.tips'
+              }) ||
+              'Calculate request rate and process rate based on request and processing data from the past 2 minutes (updated every 15 seconds)'
+            }
+          >
+            <span style={{ fontWeight: 'var(--font-weight-medium)' }}>
+              {intl.formatMessage({
+                id: 'models.table.request_process_rate'
+              }) || 'Request/Process Rate'}
+            </span>
+            <QuestionCircleOutlined className="m-l-5" />
+          </Tooltip>
+        ),
+        dataIndex: 'avg_request_rate',
+        key: 'request_process_rate',
+        align: 'center',
+        width: 190,
+        span: 2,
+        render: (text: any, record: ListItem) => {
+          return (
+            <div
+              style={{
+                fontSize: '10px',
+                lineHeight: '1.3',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ color: '#666', marginBottom: '2px' }}>
+                <span style={{ fontWeight: '500' }}>
+                  {intl.formatMessage({
+                    id: 'models.table.avg_request_rate'
+                  }) || 'Request Rate'}
+                  :
+                </span>{' '}
+                {record.avg_request_rate !== undefined
+                  ? `${record.avg_request_rate.toFixed(1)}/min`
+                  : 'N/A'}
+              </div>
+              <div style={{ color: '#666' }}>
+                <span style={{ fontWeight: '500' }}>
+                  {intl.formatMessage({
+                    id: 'models.table.avg_process_rate'
+                  }) || 'Process Rate'}
+                  :
+                </span>{' '}
+                {record.avg_process_rate !== undefined
+                  ? `${record.avg_process_rate.toFixed(1)}/min`
+                  : 'N/A'}
+              </div>
+            </div>
+          );
+        }
+      },
+      {
+        title: (
+          <Tooltip
+            title={
+              intl.formatMessage({
                 id: 'models.form.auto_adjust_replicas.tips'
               }) || 'Automatically adjust replicas based on request rate'
             }
@@ -1005,9 +1146,14 @@ const Models: React.FC<ModelsProps> = ({
         dataIndex: 'auto_adjust_replicas',
         key: 'auto_adjust_replicas',
         align: 'center',
-        width: 180,
-        span: 3,
+        width: 120,
+        span: 2,
         render: (text: any, record: ListItem) => {
+          // 获取下次scaling倒计时文本，使用 refreshTrigger 作为依赖项，确保每秒更新
+          const nextScaleTimeText = record.auto_adjust_replicas
+            ? calculateNextScaleTime(record)
+            : null;
+
           return (
             <div className="flex-column flex-center" style={{ gap: '4px' }}>
               <Switch
@@ -1021,36 +1167,19 @@ const Models: React.FC<ModelsProps> = ({
                     : ''
                 }
               />
-              <div
-                style={{
-                  fontSize: '10px',
-                  lineHeight: '1.2',
-                  textAlign: 'center'
-                }}
-              >
-                <div style={{ color: '#666' }}>
-                  <span style={{ fontWeight: '500' }}>
-                    {intl.formatMessage({
-                      id: 'models.table.avg_request_rate'
-                    }) || 'Avg Request Rate'}
-                    :
-                  </span>{' '}
-                  {record.avg_request_rate !== undefined
-                    ? `${record.avg_request_rate.toFixed(1).padStart(5)}/min`
-                    : 'N/A'}
+              {nextScaleTimeText && (
+                <div
+                  className="flex-center"
+                  style={{
+                    lineHeight: '1',
+                    fontSize: '10px',
+                    color: '#ff7a45',
+                    textAlign: 'center'
+                  }}
+                >
+                  {nextScaleTimeText}
                 </div>
-                <div style={{ color: '#666' }}>
-                  <span style={{ fontWeight: '500' }}>
-                    {intl.formatMessage({
-                      id: 'models.table.avg_process_rate'
-                    }) || 'Avg Process Rate'}
-                    :
-                  </span>{' '}
-                  {record.avg_process_rate !== undefined
-                    ? `${record.avg_process_rate.toFixed(1).padStart(5)}/min`
-                    : 'N/A'}
-                </div>
-              </div>
+              )}
             </div>
           );
         }
@@ -1074,7 +1203,7 @@ const Models: React.FC<ModelsProps> = ({
         key: 'auto_unload',
         align: 'center',
         width: 140,
-        span: 3,
+        span: 2,
         editable: {
           valueType: 'number',
           title:
@@ -1086,9 +1215,23 @@ const Models: React.FC<ModelsProps> = ({
           const displayValue =
             auto_unload_timeout !== undefined
               ? auto_unload_timeout < 5
-                ? 5
-                : auto_unload_timeout
+                ? `5${intl.formatMessage({ id: 'common.text.minutes' }) || 'min'}`
+                : `${auto_unload_timeout}${intl.formatMessage({ id: 'common.text.minutes' }) || 'min'}`
               : '-';
+
+          // 当 auto_unload 开启且 ready_replicas >= 1 时显示倒计时
+          const shouldShowUnloadTime =
+            !!record.auto_unload && record.ready_replicas >= 1;
+
+          // 如果需要显示倒计时且 last_request_time 为 null，异步更新它
+          if (shouldShowUnloadTime && !record.last_request_time) {
+            updateLastRequestTime(record);
+          }
+
+          // 获取倒计时显示文本，使用 refreshTrigger 作为依赖项，确保每秒更新
+          const unloadTimeText = shouldShowUnloadTime
+            ? calculateUnloadTime(record)
+            : null;
 
           return (
             <div className="flex-column flex-center" style={{ gap: '4px' }}>
@@ -1109,6 +1252,19 @@ const Models: React.FC<ModelsProps> = ({
               >
                 <span>{displayValue}</span>
               </div>
+              {unloadTimeText && (
+                <div
+                  className="flex-center"
+                  style={{
+                    lineHeight: '1',
+                    fontSize: '10px',
+                    color: '#ff7a45',
+                    textAlign: 'center'
+                  }}
+                >
+                  {unloadTimeText}
+                </div>
+              )}
             </div>
           );
         }
@@ -1153,6 +1309,7 @@ const Models: React.FC<ModelsProps> = ({
     handleAutoUnloadTimeoutChange,
     updateLastRequestTime,
     calculateUnloadTime,
+    calculateNextScaleTime,
     refreshTrigger
   ]);
 

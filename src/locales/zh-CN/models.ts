@@ -144,6 +144,9 @@ export default {
   'models.search.evaluate.error': '评估过程中发生了错误：',
   'models.table.avg_request_rate': '请求率',
   'models.table.avg_process_rate': '处理率',
+  'models.table.request_process_rate': '请求/处理率',
+  'models.table.request_process_rate.tips':
+    '根据过去2分钟的请求、处理数据，计算请求率和处理率（15秒更新一次）',
   'models.form.auto_load': '自动加载',
   'models.form.auto_load_replicas': '自动加载副本数',
   'models.form.auto_load_replicas.min_warning':
@@ -152,7 +155,12 @@ export default {
     '启用后，当API请求到达时，该模型将自动加载。禁用时，您必须在使用前手动启动模型。',
   'models.form.auto_adjust_replicas': '自动调整副本数',
   'models.form.auto_adjust_replicas.tips':
-    '启用后，副本数将根据过去2分钟的需求/供应关系自动调整。',
+    '启用后，副本数将根据过去2分钟的需求/供应关系自动调整（60秒进行一次，每次最多上下调整1个副本）',
+  'models.form.waiting_first_scaling': '等待第一次自动调整',
+  'models.form.checking_replicas_change': '获取副本数变化中...',
+  'models.form.replicas_change_increase': '副本数+{count}',
+  'models.form.replicas_change_decrease': '副本数-{count}',
+  'models.form.replicas_change_no_change': '副本数不变',
   'models.form.auto_unload': '自动卸载',
   'models.form.waiting_unloading': '等待卸载中...',
   'models.form.auto_unload.tips': '当指定时间内没有请求时，模型将自动卸载。',

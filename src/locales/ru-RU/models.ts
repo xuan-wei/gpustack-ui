@@ -152,6 +152,9 @@ export default {
   'models.search.evaluate.error': 'Произошла ошибка во время оценки: ',
   'models.table.avg_request_rate': 'частота запросов',
   'models.table.avg_process_rate': 'скорость обработки',
+  'models.table.request_process_rate': 'частота запросов/скорость обработки',
+  'models.table.request_process_rate.tips':
+    'Расчет частоты запросов и скорости обработки на основе данных запросов и обработки за последние 2 минуты (обновляется каждые 15 секунд)',
   'models.form.auto_load': 'Автозагрузка',
   'models.form.auto_load_replicas': 'Автозагрузка реплик',
   'models.form.auto_load_replicas.min_warning':
@@ -160,7 +163,12 @@ export default {
     'При включении модель будет автоматически загружаться при поступлении запросов API. При отключении необходимо вручную запустить модель перед использованием.',
   'models.form.auto_adjust_replicas': 'Автоматическое регулирование реплик #',
   'models.form.auto_adjust_replicas.tips':
-    'При включении количество реплик будет автоматически регулироваться в зависимости от спроса/предложения за последние 2 минуты.',
+    'При включении количество реплик будет автоматически регулироваться в зависимости от спроса/предложения за последние 2 минуты (каждые 60 секунд, с максимальной корректировкой 1 реплики вверх или вниз за раз)',
+  'models.form.waiting_first_scaling': 'Ожидание первого автомасштабирования',
+  'models.form.checking_replicas_change': 'Проверка изменений реплик...',
+  'models.form.replicas_change_increase': 'Реплики +{count}',
+  'models.form.replicas_change_decrease': 'Реплики -{count}',
+  'models.form.replicas_change_no_change': 'Реплики без изменений',
   'models.form.auto_unload': 'Автоотключение',
   'models.form.waiting_unloading': 'Ожидание отключения...',
   'models.form.auto_unload.tips':
