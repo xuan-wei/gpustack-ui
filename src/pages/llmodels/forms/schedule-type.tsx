@@ -92,6 +92,7 @@ const ScheduleTypeForm: React.FC = () => {
         gpu_ids: [],
         gpus_per_replica: null
       });
+      form.setFieldValue('distributed_inference_across_workers', false);
     }
   };
 

@@ -6,6 +6,9 @@ export default {
   'benchmark.table.model': 'Model',
   'benchmark.table.instance': 'Model Instance',
   'benchmark.table.dataset': 'Dataset',
+  'benchmark.table.dataset.ggufUnsupported': '{name} (not supported by GGUF)',
+  'benchmark.form.profile.ggufUnsupported':
+    'GGUF (llama.cpp) models do not support this profile because it requires a client-side tokenizer. Please use ShareGPT.',
   'benchmark.table.requestRate': 'Request Rate',
   'benchmark.table.gpu': 'GPU ',
   'benchmark.table.tpot': 'TPOT',
@@ -87,6 +90,8 @@ export default {
   'benchmark.table.export.results': 'Export Results',
   'benchmark.form.nonLlmModel.tips':
     'Benchmarking currently only supports LLM models',
+  'benchmark.form.ggufBackend.tips':
+    'GGUF (llama.cpp) models cannot be benchmarked: the runner requires HF-compatible tokenizer files (config.json, tokenizer.json), which are not present in a GGUF model directory.',
   'benchmark.detail.result.duration': 'Duration',
   'benchmark.detail.result.basic': 'Basic',
   'benchmark.form.profile.ShareGPT': 'ShareGPT',

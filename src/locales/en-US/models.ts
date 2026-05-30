@@ -119,6 +119,33 @@ export default {
   'models.form.releases': 'Releases',
   'models.form.moreparameters': 'Parameter Description',
   'models.table.vram.allocated': 'Allocated VRAM',
+  'models.table.metrics': 'Metrics',
+  'models.table.lifecycle': 'Lifecycle',
+  'models.table.waiting': 'Waiting',
+  'models.table.avgRequestRate': 'Request Rate',
+  'models.table.avgProcessRate': 'Process Rate',
+  'models.table.requestProcessRate': 'Request/Process Rate',
+  'models.table.requestProcessRate.tips':
+    'Calculate request rate and process rate based on request and processing data from the past 2 minutes (updated every 15 seconds)',
+  'models.table.runtimeLoad': 'Runtime Load',
+  'models.table.runtimeLoad.tips':
+    'Runtime metrics collected from inference backends: running / queued requests, load (KV cache usage for vLLM, busy-slot ratio for llama.cpp), req rate, TTFT, TPOT, output throughput (refreshed every 30s). Hover for details.',
+  'models.table.runtimeLoad.loadSourceVllm': 'KV cache usage',
+  'models.table.runtimeLoad.loadSourceLlamaCpp': 'Busy slot ratio',
+  'models.table.runtimeLoad.running': 'Running',
+  'models.table.runtimeLoad.waiting': 'Waiting',
+  'models.table.runtimeLoad.kvAvg': 'KV Cache Usage',
+  'models.table.runtimeLoad.load': 'Load',
+  'models.table.runtimeLoad.reqRate': 'Req Rate',
+  'models.table.runtimeLoad.throughput': 'Output Throughput',
+  'models.table.runtimeLoad.ttft': 'Time to First Token',
+  'models.table.runtimeLoad.tpot': 'Time per Output Token',
+  'models.table.runtimeLoad.refresh': 'Refresh now',
+  'models.table.runtimeLoad.waitingData': 'Waiting for data...',
+  'models.table.runtimeLoad.updatedAt': 'Updated {time}',
+  'models.table.runtimeLoad.kvNa': 'N/A',
+  'models.table.lastUsed': 'Last Used',
+  'models.table.lastUsed.never': 'Never',
   'models.form.backend.warning':
     'The selected backend does not support GGUF models. Please add a backend with GGUF support in the Inference Backend.',
   'models.form.backend.warning.gguf':
@@ -224,6 +251,7 @@ export default {
   'models.form.kvCache.tips2':
     'Only supported when using built-in inference backends (vLLM or SGLang).',
   'models.form.scheduling': 'Scheduling',
+  'models.form.custom': 'Custom',
   'models.form.ramRatio': 'RAM-to-VRAM Ratio',
   'models.form.ramSize': 'Maximum RAM Size (GiB)',
   'models.form.ramRatio.tips':
@@ -251,13 +279,44 @@ export default {
   'models.form.quantization': 'Quantization',
   'models.form.backend.custom': 'User-defined',
   'models.form.rules.name':
-    'Up to 63 characters; letters, numbers, dots (.), underscores (_), and hyphens (-) only; must start and end with an alphanumeric character.',
+    'Up to 63 characters; letters, numbers, dots (.), underscores (_), hyphens (-), and colons (:) only; must start and end with an alphanumeric character. Colons are automatically replaced with hyphens (e.g. qwen2.5:14b → qwen2.5-14b).',
   'models.catalog.button.explore': 'Explore More Models',
   'models.catalog.precision': 'Precision',
   'models.form.gpuPerReplica.tips': 'Enter a custom number',
   'models.form.generic_proxy': 'Enable Generic Proxy',
   'models.form.enableModelRoute': 'Enable Model Route',
   'models.form.enableModelRoute.tips': 'Enable Model Route',
+  'models.form.autoLoad': 'Auto Load',
+  'models.form.autoLoad.tips':
+    'Automatically start replicas when requests arrive and no ready instance is available.',
+  'models.form.autoLoadReplicas': 'Auto Load Replicas',
+  'models.form.autoLoadReplicas.tips':
+    'Number of replicas to start when auto load is triggered. This also serves as the upper bound for Auto Adjust Replicas.',
+  'models.form.autoAdjustReplicas': 'Auto Adjust Replicas',
+  'models.form.autoAdjustReplicas.tips':
+    'Allow the system to scale the replica count automatically based on live traffic. The upper bound is "Auto Load Replicas" and the lower bound is 1. To allow scaling up, set "Auto Load Replicas" greater than 1.',
+  'models.form.scaleWindowMinutes': 'Scaling Window (Minutes)',
+  'models.form.scaleWindowMinutes.tips':
+    'Trigger conditions must be sustained for this duration before scaling. Cooldown is half this window.',
+  'models.form.scaleDownKvThreshold': 'Scale-down KV Threshold',
+  'models.form.scaleDownKvThreshold.tips':
+    'When the queue is empty and the predicted average KV cache usage after removing one replica falls below this threshold, trigger scale down.',
+  'models.form.autoUnload': 'Auto Unload',
+  'models.form.autoUnload.tips':
+    'Automatically stop idle replicas after the configured timeout.',
+  'models.form.autoUnloadTimeout': 'Auto Unload Timeout (Minutes)',
+  'models.form.autoUnloadTimeout.tips':
+    'How long an idle model waits before it is automatically unloaded.',
+  'models.form.gpuMemoryMinGib': 'GPU Memory Floor (GiB)',
+  'models.form.gpuMemoryMinGib.tips':
+    'Minimum absolute VRAM (GiB) to claim on each GPU used by this model. Combined with the ceiling, GPUStack back-derives an effective --gpu-memory-utilization for vLLM scheduling and launch. Leave blank for no floor.',
+  'models.form.gpuMemoryMaxGib': 'GPU Memory Ceiling (GiB)',
+  'models.form.gpuMemoryMaxGib.tips':
+    'Maximum absolute VRAM (GiB) to claim on each GPU used by this model. Set equal to the floor for a fixed value. GPUStack back-derives --gpu-memory-utilization from this on a per-GPU basis. Leave blank for no ceiling.',
+  'models.form.waitingFirstScaling': 'Waiting for first auto scaling',
+  'models.form.checkingReplicasChange': 'Checking replicas change...',
+  'models.form.replicasChangeNoChange': 'No replicas change',
+  'models.form.waitingUnloading': 'Waiting for Unloading...',
   'models.form.generic_proxy.tips':
     'After enabling the generic proxy, you can access URI paths that do not follow the OpenAI API standard.',
   'models.form.generic_proxy.button': 'Generic Proxy',

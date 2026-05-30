@@ -120,6 +120,9 @@ export default {
   'models.form.releases': 'リリース',
   'models.form.moreparameters': 'パラメータ説明',
   'models.table.vram.allocated': '割り当て済みVRAM',
+  'models.table.metrics': 'メトリクス',
+  'models.table.lifecycle': 'ライフサイクル',
+  'models.table.waiting': '待機状態',
   'models.form.backend.warning':
     'The selected backend does not support GGUF models. Please add a backend with GGUF support in the Inference Backend.',
   'models.form.backend.warning.gguf':
@@ -224,6 +227,7 @@ export default {
   'models.form.kvCache.tips2':
     'Only supported when using built-in inference backends (vLLM or SGLang).',
   'models.form.scheduling': 'Scheduling',
+  'models.form.custom': 'カスタム',
   'models.form.ramRatio': 'RAM-to-VRAM Ratio',
   'models.form.ramSize': 'Maximum RAM Size (GiB)',
   'models.form.ramRatio.tips':
@@ -251,13 +255,40 @@ export default {
   'models.form.quantization': 'Quantization',
   'models.form.backend.custom': 'User Defined',
   'models.form.rules.name':
-    'Up to 63 characters; letters, numbers, dots (.), underscores (_), and hyphens (-) only; must start and end with an alphanumeric character.',
+    '最大 63 文字。英数字、ドット（.）、アンダースコア（_）、ハイフン（-）、コロン（:）のみ使用可。先頭と末尾は英数字。コロンはハイフンに自動置換されます（例: qwen2.5:14b → qwen2.5-14b）。',
   'models.catalog.button.explore': 'Explore More Models',
   'models.catalog.precision': 'Precision',
   'models.form.gpuPerReplica.tips': 'Enter a custom number',
   'models.form.generic_proxy': 'Enable Generic Proxy',
   'models.form.enableModelRoute': 'Enable Model Route',
   'models.form.enableModelRoute.tips': 'Enable Model Route',
+  'models.form.autoLoad': '自動ロード',
+  'models.form.autoLoad.tips':
+    'リクエストが到着し、利用可能なインスタンスがない場合にレプリカを自動起動します。',
+  'models.form.autoLoadReplicas': '自動ロードレプリカ数',
+  'models.form.autoLoadReplicas.tips':
+    '自動ロードが発火したときに起動するレプリカ数です。「レプリカ数を自動調整」のスケールアップ上限も兼ねます。',
+  'models.form.autoAdjustReplicas': 'レプリカ数を自動調整',
+  'models.form.autoAdjustReplicas.tips':
+    'リアルタイムのトラフィックに応じてレプリカ数を自動でスケールします。上限は「自動ロードレプリカ数」、下限は 1 です。スケールアップを有効にするには「自動ロードレプリカ数」を 1 より大きく設定してください。',
+  'models.form.scaleWindowMinutes': 'スケーリング観測ウィンドウ（分）',
+  'models.form.scaleWindowMinutes.tips':
+    'スケールアップ/ダウンの条件がこの時間継続した場合に発動。クールダウンはウィンドウの半分。',
+  'models.form.scaleDownKvThreshold': 'スケールダウン KV しきい値',
+  'models.form.scaleDownKvThreshold.tips':
+    'キューが空で、レプリカを1つ減らした後の予測平均 KV キャッシュ使用率がこのしきい値を下回るとスケールダウンします。',
+  'models.form.autoUnload': '自動アンロード',
+  'models.form.autoUnload.tips':
+    '設定したタイムアウト後にアイドル状態のレプリカを自動停止します。',
+  'models.form.autoUnloadTimeout': '自動アンロードタイムアウト（秒）',
+  'models.form.autoUnloadTimeout.tips':
+    'モデルが自動アンロードされるまでのアイドル時間です。',
+  'models.form.gpuMemoryMinGib': 'GPU メモリ下限 (GiB)',
+  'models.form.gpuMemoryMinGib.tips':
+    'このモデルが使用する各 GPU で最低限確保する絶対 VRAM (GiB)。指定すると GPUStack が --gpu-memory-utilization を逆算します。空欄は下限なし。',
+  'models.form.gpuMemoryMaxGib': 'GPU メモリ上限 (GiB)',
+  'models.form.gpuMemoryMaxGib.tips':
+    'このモデルが使用する各 GPU で確保する最大の絶対 VRAM (GiB)。下限と等しくすると固定値になります。空欄は上限なし。',
   'models.form.generic_proxy.tips':
     'After enabling the generic proxy, you can access URI paths that do not follow the OpenAI API standard.',
   'models.form.generic_proxy.button': 'Generic Proxy',
@@ -279,7 +310,35 @@ export default {
   'models.form.maxContextLength': 'Maximum Context Length',
   'models.form.backend.helperText':
     'Not enabled yet. Will be enabled after deployment. ',
-  'models.table.instance.benchmark': 'Run Benchmark'
+  'models.table.instance.benchmark': 'Run Benchmark',
+  'models.table.avgRequestRate': 'Request Rate',
+  'models.table.avgProcessRate': 'Process Rate',
+  'models.table.requestProcessRate': 'Request/Process Rate',
+  'models.table.requestProcessRate.tips':
+    'Calculate request rate and process rate based on request and processing data from the past 2 minutes (updated every 15 seconds)',
+  'models.table.runtimeLoad': 'リアルタイム負荷',
+  'models.table.runtimeLoad.tips':
+    '推論バックエンドから収集したランタイムメトリクス：処理中 / 待機リクエスト数、負荷率（vLLM は KV キャッシュ使用率、llama.cpp はスロット占有率）、リクエスト率、TTFT、TPOT、出力スループット（30 秒ごとに更新）。マウスホバーで詳細表示。',
+  'models.table.runtimeLoad.loadSourceVllm': 'KV キャッシュ使用率',
+  'models.table.runtimeLoad.loadSourceLlamaCpp': 'スロット占有率',
+  'models.table.runtimeLoad.running': '処理中',
+  'models.table.runtimeLoad.waiting': '待機中',
+  'models.table.runtimeLoad.kvAvg': 'KV キャッシュ使用率',
+  'models.table.runtimeLoad.load': '負荷',
+  'models.table.runtimeLoad.reqRate': 'リクエスト率',
+  'models.table.runtimeLoad.throughput': '出力スループット',
+  'models.table.runtimeLoad.ttft': '初トークン遅延',
+  'models.table.runtimeLoad.tpot': '出力トークン遅延',
+  'models.table.runtimeLoad.refresh': '今すぐ更新',
+  'models.table.runtimeLoad.waitingData': 'データ待機中...',
+  'models.table.runtimeLoad.updatedAt': '{time} に更新',
+  'models.table.runtimeLoad.kvNa': 'N/A',
+  'models.table.lastUsed': '最終使用',
+  'models.table.lastUsed.never': '未使用',
+  'models.form.waitingFirstScaling': 'Waiting for first auto scaling',
+  'models.form.checkingReplicasChange': 'Checking replicas change...',
+  'models.form.replicasChangeNoChange': 'No replicas change',
+  'models.form.waitingUnloading': 'Waiting for Unloading...'
 };
 
 // ========== To-Do: Translate Keys (Remove After Translation) ==========

@@ -83,6 +83,7 @@ export interface FormData {
   request_rate: number;
   dataset_seed: number;
   model_instance?: string;
+  model_backend?: string;
 }
 
 export interface BenchmarkListItem extends FormData {

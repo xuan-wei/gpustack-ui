@@ -37,6 +37,7 @@ import {
 } from '../config';
 import { backendOptionsMap } from '../config/backend-parameters';
 import { generateSource } from '../config/button-actions';
+import { formatSubordinateWorkers } from '../config/instance-display';
 import {
   DistributedServerItem,
   DistributedServers,
@@ -524,6 +525,13 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
             1
           )}
         </div>
+        {instanceData.distributed_servers?.subordinate_workers?.length ? (
+          <div className="flex-center">
+            <InfoCircleOutlined className="m-r-5" />
+            {intl.formatMessage({ id: 'models.table.acrossworker' })}:{' '}
+            {formatSubordinateWorkers(instanceData, workerList)}
+          </div>
+        ) : null}
       </div>
     );
   }, [
@@ -704,10 +712,15 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
       {contextHolder}
       <div style={{ borderRadius: 'var(--ant-table-header-border-radius)' }}>
         <RowChildren>
-          <Row style={{ width: '100%' }} align="middle">
+          <Row
+            style={{ width: '100%', flexWrap: 'nowrap', minWidth: 1120 }}
+            align="middle"
+          >
             <Col
               span={6}
+              flex="0 0 240px"
               style={{
+                minWidth: 240,
                 paddingInline: 'var(--ant-table-cell-padding-inline)'
               }}
             >
@@ -723,7 +736,7 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                 )}
               </span>
             </Col>
-            <Col span={7}>
+            <Col span={7} flex="0 0 340px" style={{ minWidth: 340 }}>
               <span
                 style={{
                   paddingLeft: '58px',
@@ -732,15 +745,32 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                 }}
                 className="flex align-center"
               >
+                {!!instanceData.worker_id && (
+                  <span
+                    className="flex-center"
+                    style={{
+                      color: 'var(--ant-color-text-secondary)',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <span className="m-r-5">({instanceData.worker_name})</span>
+                    <IconFont type="icon-filled-gpu" className="m-r-5" />[
+                    {_.join(
+                      instanceData.gpu_indexes?.sort?.((a, b) => a - b),
+                      ','
+                    )}
+                    ]
+                  </span>
+                )}
                 {renderOffloadInfo}
                 {renderDistributionInfo(
                   instanceData.distributed_servers || ({} as DistributedServers)
                 )}
               </span>
             </Col>
-            <Col span={4}>
+            <Col span={4} flex="0 0 220px" style={{ minWidth: 220 }}>
               <span
-                style={{ paddingLeft: '40px', gap: 4 }}
+                style={{ paddingLeft: '24px', gap: 4 }}
                 className="flex-center"
               >
                 <InstanceStatusTag
@@ -755,15 +785,15 @@ const InstanceItem: React.FC<InstanceItemProps> = ({
                 ></RenderWorkerDownloading>
               </span>
             </Col>
-            <Col span={4}>
-              <span style={{ paddingLeft: 43 }} className="flex">
+            <Col span={4} flex="0 0 180px" style={{ minWidth: 180 }}>
+              <span style={{ paddingLeft: 24 }} className="flex">
                 <AutoTooltip ghost>
                   {dayjs(instanceData.created_at).format('YYYY-MM-DD HH:mm:ss')}
                 </AutoTooltip>
               </span>
             </Col>
-            <Col span={3}>
-              <div style={{ paddingLeft: 36 }}>
+            <Col span={3} flex="0 0 140px" style={{ minWidth: 140 }}>
+              <div style={{ paddingLeft: 24 }}>
                 <DropdownButtons
                   items={actionItems}
                   onSelect={handleOnSelect}
