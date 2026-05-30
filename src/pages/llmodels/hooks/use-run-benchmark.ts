@@ -15,7 +15,8 @@ export const useBenchmarkTargetInstance = () => {
       model_name: instance.model_name,
       model_id: instance.model_id,
       model_instance_name: instance.name,
-      model_instance: [instance.model_name, instance.name]
+      model_instance: [instance.model_name, instance.name],
+      model_backend: instance.backend
     });
     navigate('/models/benchmark');
   };
@@ -26,7 +27,8 @@ export const useBenchmarkTargetInstance = () => {
       model_name: '',
       model_id: null,
       model_instance_name: '',
-      model_instance: []
+      model_instance: [],
+      model_backend: undefined
     });
   };
 

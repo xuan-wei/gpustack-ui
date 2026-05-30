@@ -163,6 +163,7 @@ export default {
   'common.time.label': '期間',
   'common.time.hour': '時間',
   'common.time.minute': '分',
+  'common.time.second': '秒',
   'common.issue.report': '問題を報告',
   'common.social.discord': 'Discordに参加',
   'common.table.mark': 'コメント',

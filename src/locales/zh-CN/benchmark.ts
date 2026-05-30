@@ -6,6 +6,9 @@ export default {
   'benchmark.table.model': '模型',
   'benchmark.table.instance': '模型实例',
   'benchmark.table.dataset': '数据集',
+  'benchmark.table.dataset.ggufUnsupported': '{name}（GGUF 模型不支持）',
+  'benchmark.form.profile.ggufUnsupported':
+    'GGUF（llama.cpp）模型不支持该模式，因为它需要客户端 tokenizer。请使用 ShareGPT。',
   'benchmark.table.requestRate': '请求率',
   'benchmark.table.gpu': 'GPU ',
   'benchmark.table.tpot': 'TPOT',
@@ -86,6 +89,8 @@ export default {
   'benchmark.env.cpuCounts': 'CPU 核心数',
   'benchmark.table.export.results': '导出结果',
   'benchmark.form.nonLlmModel.tips': '基准测试目前仅支持 LLM 模型',
+  'benchmark.form.ggufBackend.tips':
+    'GGUF (llama.cpp) 模型暂不支持基准测试：测试器需要 HF 格式的 tokenizer 文件（config.json、tokenizer.json），而 GGUF 模型目录中只有 .gguf 文件。',
   'benchmark.detail.result.duration': '耗时',
   'benchmark.detail.result.basic': '基础信息',
   'benchmark.form.profile.ShareGPT': 'ShareGPT',

@@ -100,6 +100,39 @@ export async function queryModelDetail(id: number) {
   });
 }
 
+export interface ModelRuntimeSnapshot {
+  running: number;
+  waiting: number;
+  kv_avg: number | null;
+  kv_per_replica: number[];
+  kv_supported?: boolean;
+  // Unified 0–1 load ratio: vLLM = kv_avg; llama.cpp = running / total slots.
+  load_ratio: number | null;
+  ttft_avg_ms: number | null;
+  tpot_avg_ms: number | null;
+  // Output token throughput across all replicas (tok/s, last tick).
+  gen_throughput_tok_s: number | null;
+  // 5-min sliding-window request rate from auto_metrics (req/min).
+  req_per_min: number | null;
+  instance_count: number;
+}
+
+export interface ModelRuntimeSnapshotsResponse {
+  snapshots: Record<string, ModelRuntimeSnapshot>;
+  updated_at: string | null;
+  refreshed: boolean;
+}
+
+export async function queryModelRuntimeSnapshots(forceRefresh = false) {
+  return request<ModelRuntimeSnapshotsResponse>(
+    `${MODELS_API}/runtime-snapshots`,
+    {
+      method: 'GET',
+      params: forceRefresh ? { force_refresh: 1 } : undefined
+    }
+  );
+}
+
 // ===================== Model Instances start =====================
 
 export async function queryModelInstancesList(

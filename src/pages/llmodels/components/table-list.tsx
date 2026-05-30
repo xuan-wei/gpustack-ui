@@ -25,6 +25,7 @@ import { DownOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { useIntl, useNavigate, useSearchParams } from '@umijs/max';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Input, Space, message } from 'antd';
+import dayjs from 'dayjs';
 import { useAtom } from 'jotai';
 import _ from 'lodash';
 import React, {
@@ -63,6 +64,7 @@ import useEditDeployment from '../hooks/use-edit-deployment';
 import useFilterStatus from '../hooks/use-filter-status';
 import useFormInitialValues from '../hooks/use-form-initial-values';
 import useModelsColumns from '../hooks/use-models-columns';
+import useRuntimeSnapshots from '../hooks/use-runtime-snapshots';
 import DeployModal from './deploy-modal';
 import Instances from './instances';
 import UpdateModelModal from './update-modal';
@@ -200,6 +202,20 @@ const Models: React.FC<ModelsProps> = ({
     status: ''
   });
   const modalRef = useRef<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const {
+    snapshots: runtimeSnapshots,
+    updatedAt: runtimeUpdatedAt,
+    refresh: refreshRuntime,
+    refreshing: runtimeRefreshing
+  } = useRuntimeSnapshots(15000);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (deleteIds?.length) {
@@ -223,15 +239,161 @@ const Models: React.FC<ModelsProps> = ({
 
   const handleOnCell = useMemoizedFn(async (record: any, extra: any) => {
     try {
-      await updateModel(getFormattedData(record, { replicas: extra.newValue }));
+      const field = extra.dataIndex ?? 'replicas';
+      await updateModel(getFormattedData(record, { [field]: extra.newValue }));
       message.success(intl.formatMessage({ id: 'common.message.success' }));
-      if (extra.newValue > extra.oldValue) {
+      if (field === 'replicas' && extra.newValue > extra.oldValue) {
         updateExpandedRowKeys([record.id, ...expandedRowKeys]);
       }
     } catch (error) {
       // ignore
     }
   });
+
+  // Single helper for the lifecycle toggles: patch one or more fields on a
+  // model, toast, and refresh. Replaces five near-identical handlers.
+  const patchModel = useCallback(
+    async (record: ListItem, partial: Record<string, any>) => {
+      try {
+        await updateModel(getFormattedData(record, partial));
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error) {
+        message.error(intl.formatMessage({ id: 'common.message.failed' }));
+      }
+    },
+    [handleSearch, intl]
+  );
+
+  const handleAutoLoadToggle = useCallback(
+    (checked: boolean, record: ListItem) => {
+      const partial: any = { auto_load: checked };
+      // Turning auto-load off also disables auto-adjust (ceiling source).
+      if (!checked && record.auto_adjust_replicas !== undefined) {
+        partial.auto_adjust_replicas = false;
+      }
+      return patchModel(record, partial);
+    },
+    [patchModel]
+  );
+
+  const handleAutoUnloadToggle = useCallback(
+    (checked: boolean, record: ListItem) =>
+      patchModel(record, { auto_unload: checked }),
+    [patchModel]
+  );
+
+  const handleAutoAdjustToggle = useCallback(
+    (checked: boolean, record: ListItem) =>
+      patchModel(record, { auto_adjust_replicas: checked }),
+    [patchModel]
+  );
+
+  const calculateUnloadTime = useCallback(
+    (record: ListItem): string | null => {
+      if (!record.auto_unload || !record.auto_unload_timeout) {
+        return null;
+      }
+      const timeoutMinutes = record.auto_unload_timeout;
+      const timeoutSeconds = timeoutMinutes * 60;
+      if (!record.last_request_time) {
+        const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+        return `${timeoutMinutes}${minUnit}`;
+      }
+      try {
+        const lastRequestTime = dayjs(record.last_request_time).utc();
+        const now = dayjs().utc();
+        const expiryTime = lastRequestTime.add(timeoutSeconds, 'second');
+        const diffMs = Math.max(0, expiryTime.diff(now));
+        const diffMinutes = Math.floor(diffMs / (60 * 1000));
+        const diffSeconds = Math.floor((diffMs % (60 * 1000)) / 1000);
+        if (diffMinutes === 0 && diffSeconds === 0) {
+          return intl.formatMessage({ id: 'models.form.waitingUnloading' });
+        }
+        const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+        const secUnit = intl.formatMessage({ id: 'common.time.second' });
+        return `${diffMinutes}${minUnit} ${diffSeconds}${secUnit}`;
+      } catch {
+        const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+        return `${timeoutMinutes}${minUnit}`;
+      }
+    },
+    [intl]
+  );
+
+  const calculateNextScaleTime = useCallback(
+    (record: ListItem): string | React.ReactElement | null => {
+      if (!record.auto_adjust_replicas) {
+        return null;
+      }
+      try {
+        if (!record.last_scale_time) {
+          return intl.formatMessage({ id: 'models.form.waitingFirstScaling' });
+        }
+        const lastScaleTime = dayjs(record.last_scale_time).utc();
+        const now = dayjs().utc();
+        const elapsedSeconds = now.diff(lastScaleTime, 'second');
+        if (elapsedSeconds >= 60.5) {
+          return intl.formatMessage({ id: 'models.form.waitingFirstScaling' });
+        }
+        if (elapsedSeconds >= 0 && elapsedSeconds < 1) {
+          return intl.formatMessage({
+            id: 'models.form.checkingReplicasChange'
+          });
+        }
+        if (elapsedSeconds >= 1 && elapsedSeconds <= 5) {
+          if (record.last_scale_message) {
+            try {
+              const parts = record.last_scale_message.split(',');
+              if (parts.length >= 4) {
+                const requestRate = parts[0];
+                const processRate = parts[1];
+                const previousReplicas = parts[2];
+                const newReplicas = parts[3];
+                return (
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      lineHeight: '1.2',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>
+                      {intl.formatMessage({
+                        id: 'models.table.avgRequestRate'
+                      })}
+                      ：{requestRate}/min
+                    </div>
+                    <div>
+                      {intl.formatMessage({
+                        id: 'models.table.avgProcessRate'
+                      })}
+                      ：{processRate}/min
+                    </div>
+                    <div>
+                      {intl.formatMessage({ id: 'models.form.replicas' })}：
+                      {previousReplicas} → {newReplicas}
+                    </div>
+                  </div>
+                );
+              }
+            } catch {
+              // ignore parse error
+            }
+          }
+          return intl.formatMessage({
+            id: 'models.form.replicasChangeNoChange'
+          });
+        }
+        const secUnit = intl.formatMessage({ id: 'common.time.second' });
+        const remainingSeconds = 60 - elapsedSeconds;
+        return `${Math.max(0, remainingSeconds)}${secUnit}`;
+      } catch {
+        return intl.formatMessage({ id: 'models.form.waitingFirstScaling' });
+      }
+    },
+    [intl]
+  );
 
   const handleStartModel = async (row: ListItem) => {
     await updateModel(getFormattedData(row, { replicas: 1 }));
@@ -549,11 +711,34 @@ const Models: React.FC<ModelsProps> = ({
   const options = useMemo(() => {
     return {
       handleSelect,
-      clusterList,
       sortOrder,
-      targetList: targetList
+      targetList,
+      refreshTrigger,
+      handleAutoLoadToggle,
+      handleAutoUnloadToggle,
+      handleAutoAdjustToggle,
+      calculateUnloadTime,
+      calculateNextScaleTime,
+      runtimeSnapshots,
+      runtimeUpdatedAt,
+      refreshRuntime,
+      runtimeRefreshing
     };
-  }, [handleSelect, clusterList, sortOrder, targetList]);
+  }, [
+    handleSelect,
+    sortOrder,
+    targetList,
+    refreshTrigger,
+    handleAutoLoadToggle,
+    handleAutoUnloadToggle,
+    handleAutoAdjustToggle,
+    calculateUnloadTime,
+    calculateNextScaleTime,
+    runtimeSnapshots,
+    runtimeUpdatedAt,
+    refreshRuntime,
+    runtimeRefreshing
+  ]);
 
   const columns = useModelsColumns(options);
 
@@ -693,37 +878,41 @@ const Models: React.FC<ModelsProps> = ({
           }
         ></PageTools>
 
-        <SealTable
-          columns={columns}
-          sortDirections={TABLE_SORT_DIRECTIONS}
-          dataSource={dataSource}
-          rowSelection={rowSelection}
-          expandedRowKeys={expandedRowKeys}
-          showSorterTooltip={false}
-          onExpand={handleExpandChange}
-          onExpandAll={handleToggleExpandAll}
-          loading={loading}
-          loadend={loadend}
-          rowKey="id"
-          childParentKey="model_id"
-          expandable={true}
-          onTableSort={handleOnSort}
-          onCell={handleOnCell}
-          pollingChildren={false}
-          watchChildren={true}
-          loadChildren={getModelInstances}
-          loadChildrenAPI={generateChildrenRequestAPI}
-          renderChildren={renderChildren}
-          empty={noResourceResult}
-          pagination={{
-            showSizeChanger: true,
-            pageSize: queryParams.perPage,
-            current: queryParams.page,
-            total: total,
-            hideOnSinglePage: queryParams.perPage === 10,
-            onChange: handlePageChange
-          }}
-        ></SealTable>
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ minWidth: 1450 }}>
+            <SealTable
+              columns={columns}
+              sortDirections={TABLE_SORT_DIRECTIONS}
+              dataSource={dataSource}
+              rowSelection={rowSelection}
+              expandedRowKeys={expandedRowKeys}
+              showSorterTooltip={false}
+              onExpand={handleExpandChange}
+              onExpandAll={handleToggleExpandAll}
+              loading={loading}
+              loadend={loadend}
+              rowKey="id"
+              childParentKey="model_id"
+              expandable={true}
+              onTableSort={handleOnSort}
+              onCell={handleOnCell}
+              pollingChildren={false}
+              watchChildren={true}
+              loadChildren={getModelInstances}
+              loadChildrenAPI={generateChildrenRequestAPI}
+              renderChildren={renderChildren}
+              empty={noResourceResult}
+              pagination={{
+                showSizeChanger: true,
+                pageSize: queryParams.perPage,
+                current: queryParams.page,
+                total: total,
+                hideOnSinglePage: queryParams.perPage === 10,
+                onChange: handlePageChange
+              }}
+            ></SealTable>
+          </div>
+        </div>
       </PageBox>
       <UpdateModelModal
         open={openEditModalStatus.open}

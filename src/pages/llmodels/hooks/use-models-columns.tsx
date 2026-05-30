@@ -14,10 +14,13 @@ import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import { useAtomValue } from 'jotai';
 import _ from 'lodash';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import ModelTag from '../../_components/model-tag';
+import { ModelRuntimeSnapshot } from '../apis';
 import { generateSource } from '../config/button-actions';
 import { ListItem } from '../config/types';
+import useLifecycleColumns from './columns/lifecycle-columns';
+import useRuntimeLoadColumn from './columns/runtime-load-column';
 
 interface ActionItem {
   label: string;
@@ -76,20 +79,54 @@ const ActionList: ActionItem[] = [
 interface ModelsColumnsHookProps {
   handleSelect: (val: string, record: ListItem) => void;
   sortOrder: string[];
-  clusterList: Global.BaseOption<
-    number,
-    { provider: string; state: string | number }
-  >[];
+  targetList: any[];
+  refreshTrigger: number;
+  handleAutoLoadToggle: (checked: boolean, record: ListItem) => void;
+  handleAutoUnloadToggle: (checked: boolean, record: ListItem) => void;
+  handleAutoAdjustToggle: (checked: boolean, record: ListItem) => void;
+  calculateUnloadTime: (record: ListItem) => string | null;
+  calculateNextScaleTime: (
+    record: ListItem
+  ) => string | React.ReactElement | null;
+  runtimeSnapshots?: Record<string, ModelRuntimeSnapshot>;
+  runtimeUpdatedAt?: string | null;
+  refreshRuntime?: () => Promise<void>;
+  runtimeRefreshing?: boolean;
 }
 
 const useModelsColumns = ({
   handleSelect,
-  clusterList,
   sortOrder,
-  targetList
-}: ModelsColumnsHookProps & { targetList: any[] }): SealColumnProps[] => {
+  targetList,
+  refreshTrigger,
+  handleAutoLoadToggle,
+  handleAutoUnloadToggle,
+  handleAutoAdjustToggle,
+  calculateUnloadTime,
+  calculateNextScaleTime,
+  runtimeSnapshots,
+  runtimeUpdatedAt,
+  refreshRuntime,
+  runtimeRefreshing
+}: ModelsColumnsHookProps): SealColumnProps[] => {
   const intl = useIntl();
   const systemConfig = useAtomValue(systemConfigAtom);
+
+  const runtimeLoadColumn = useRuntimeLoadColumn({
+    runtimeSnapshots,
+    runtimeUpdatedAt,
+    refreshRuntime,
+    runtimeRefreshing
+  });
+
+  const { autoLoadColumn, autoAdjustColumn, autoUnloadColumn, lastUsedColumn } =
+    useLifecycleColumns({
+      handleAutoLoadToggle,
+      handleAutoUnloadToggle,
+      handleAutoAdjustToggle,
+      calculateUnloadTime,
+      calculateNextScaleTime
+    });
 
   const setModelActionList = useMemoizedFn((record: any) => {
     return _.filter(ActionList, (action: any) => {
@@ -120,13 +157,17 @@ const useModelsColumns = ({
   });
 
   return useMemo(() => {
+    // refreshTrigger is referenced to force re-render every second for countdowns
+    void refreshTrigger;
+
     return [
       {
         title: intl.formatMessage({ id: 'common.table.name' }),
         dataIndex: 'name',
         key: 'name',
         sorter: tableSorter(1),
-        span: 5,
+        span: 4,
+        width: 240,
         render: (text: string, record: ListItem) => (
           <span className="flex-center" style={{ maxWidth: '100%' }}>
             <AutoTooltip ghost>
@@ -137,27 +178,13 @@ const useModelsColumns = ({
         )
       },
       {
-        title: intl.formatMessage({ id: 'clusters.title' }),
-        dataIndex: 'cluster_id',
-        key: 'cluster_id',
-        sorter: tableSorter(2),
-        span: 3,
-        render: (text: string, record: ListItem) => (
-          <span className="flex flex-column" style={{ width: '100%' }}>
-            {
-              clusterList.find((item) => item.value === record.cluster_id)
-                ?.label
-            }
-          </span>
-        )
-      },
-      {
         title: intl.formatMessage({ id: 'models.form.source' }),
         dataIndex: 'source',
         key: 'source',
-        sorter: tableSorter(3),
-        span: 5,
-        render: (text: string, record: ListItem) => (
+        sorter: tableSorter(2),
+        span: 2,
+        width: 200,
+        render: (_: string, record: ListItem) => (
           <span className="flex flex-column" style={{ width: '100%' }}>
             <AutoTooltip ghost>{generateSource(record)}</AutoTooltip>
           </span>
@@ -179,25 +206,34 @@ const useModelsColumns = ({
         ),
         dataIndex: 'replicas',
         key: 'replicas',
-        align: 'left',
-        sorter: tableSorter(4),
-        span: 4,
+        align: 'center',
+        sorter: tableSorter(3),
+        span: 2,
+        width: 120,
         editable: {
           valueType: 'number',
           title: intl.formatMessage({ id: 'models.table.replicas.edit' })
         },
-        render: (text: number, record: ListItem) => (
-          <span style={{ minWidth: '23px' }}>
-            {record.ready_replicas} / {record.replicas}
-          </span>
+        render: (_: number, record: ListItem) => (
+          <div className="flex-column flex-center" style={{ gap: '4px' }}>
+            <span style={{ paddingLeft: 10, minWidth: '33px' }}>
+              {record.ready_replicas} / {record.replicas}
+            </span>
+          </div>
         )
       },
+      autoLoadColumn,
+      runtimeLoadColumn,
+      autoAdjustColumn,
+      autoUnloadColumn,
+      lastUsedColumn,
       {
         title: intl.formatMessage({ id: 'common.table.createTime' }),
         dataIndex: 'created_at',
         key: 'created_at',
-        sorter: tableSorter(5),
-        span: 4,
+        sorter: tableSorter(4),
+        span: 2,
+        width: 180,
         render: (text: number) => (
           <AutoTooltip ghost>
             {dayjs(text).format('YYYY-MM-DD HH:mm:ss')}
@@ -208,8 +244,9 @@ const useModelsColumns = ({
         title: intl.formatMessage({ id: 'common.table.operation' }),
         key: 'operation',
         dataIndex: 'operation',
-        span: 3,
-        render: (text: any, record: ListItem) => (
+        span: 2,
+        width: 120,
+        render: (_: any, record: ListItem) => (
           <DropdownButtons
             items={setModelActionList(record)}
             onSelect={(val) => handleSelect(val, record)}
@@ -217,7 +254,18 @@ const useModelsColumns = ({
         )
       }
     ];
-  }, [sortOrder, clusterList, intl, handleSelect, setModelActionList]);
+  }, [
+    sortOrder,
+    refreshTrigger,
+    intl,
+    handleSelect,
+    setModelActionList,
+    runtimeLoadColumn,
+    autoLoadColumn,
+    autoAdjustColumn,
+    autoUnloadColumn,
+    lastUsedColumn
+  ]);
 };
 
 export default useModelsColumns;

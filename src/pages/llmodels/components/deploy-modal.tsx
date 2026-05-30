@@ -536,13 +536,22 @@ const AddModal: FC<AddModalProps> = (props) => {
   };
 
   useEffect(() => {
+    let openTimer: ReturnType<typeof setTimeout> | undefined;
     if (open) {
-      handleOnOpen();
+      // Defer handleOnOpen by a tick so the inner DataForm's
+      // useImperativeHandle has bound `form.current` before we call
+      // `form.current?.getBackendOptions?.()`. Without this, the optional
+      // chain short-circuits to undefined on the synchronous first run, the
+      // backend list never loads, and gating in kv-cache.tsx /
+      // speculative-decode.tsx (which reads `flatBackendOptions`) leaves
+      // those checkboxes stuck disabled. Mirrors deploy-builtin-modal.tsx.
+      openTimer = setTimeout(handleOnOpen, 100);
     } else {
       cancelEvaluate();
       clearCacheFormValues();
     }
     return () => {
+      if (openTimer) clearTimeout(openTimer);
       setSelectedModel({});
       setWarningStatus({
         show: false,

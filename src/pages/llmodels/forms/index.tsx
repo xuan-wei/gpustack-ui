@@ -23,6 +23,10 @@ import {
 import { backendOptionsMap } from '../config/backend-parameters';
 import { FormContext } from '../config/form-context';
 import {
+  getDefaultLifecycleFormValues,
+  normalizeLifecycleFormValues
+} from '../config/lifecycle-form';
+import {
   BackendOption,
   DeployFormKey,
   FormData,
@@ -34,6 +38,7 @@ import useQueryBackends from '../hooks/use-query-backends';
 import { useQueryContextLength } from '../services/use-query-context-length';
 import AdvanceConfig from './advance-config';
 import BasicForm from './basic';
+import CustomConfig from './custom-config';
 import Performance from './performance';
 import ScheduleTypeForm from './schedule-type';
 
@@ -69,7 +74,8 @@ const TABKeysMap = {
   BASIC: 'basic',
   SCHEDULING: 'scheduling',
   PERFORMANCE: 'performance',
-  ADVANCED: 'advanced'
+  ADVANCED: 'advanced',
+  CUSTOM: 'custom'
 };
 
 const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
@@ -129,6 +135,12 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
       label: intl.formatMessage({ id: 'resources.form.advanced' }),
       icon: <IconFont type="icon-settings" />,
       field: 'categories'
+    },
+    {
+      value: TABKeysMap.CUSTOM,
+      label: intl.formatMessage({ id: 'models.form.custom' }),
+      icon: <IconFont type="icon-settings" />,
+      field: 'auto_load'
     }
   ];
 
@@ -215,9 +227,11 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
     let data = _.cloneDeep(formdata);
     data.categories = data.categories ? [data.categories] : [];
     const gpuSelector = generateGPUIds(data);
+    const lifecycleValues = normalizeLifecycleFormValues(data);
     const allValues = {
       ..._.omit(data, ['scheduleType']),
-      ...gpuSelector
+      ...gpuSelector,
+      ...lifecycleValues
     };
     onOk(allValues);
   };
@@ -418,10 +432,11 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
             scheduleType: ScheduleValueMap.Auto,
             categories: null,
             restart_on_error: true,
-            distributed_inference_across_workers: true,
+            distributed_inference_across_workers: false,
             mode: 'throughput',
             enable_model_route: true,
             generic_proxy: false,
+            ...getDefaultLifecycleFormValues(),
             extended_kv_cache: {
               enabled: false,
               chunk_size: null,
@@ -440,6 +455,7 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
                 initialValues?.speculative_config?.ngram_max_match_length || 10
             },
             ...initialValues,
+            ...normalizeLifecycleFormValues(initialValues || ({} as FormData)),
             backend_version: initialValues?.backend_version || null,
             max_context_len: initialValues?.max_context_len || 2048
           }}
@@ -474,6 +490,12 @@ const DataForm: React.FC<DataFormProps> = forwardRef((props, ref) => {
                 label: intl.formatMessage({ id: 'resources.form.advanced' }),
                 forceRender: true,
                 children: <AdvanceConfig></AdvanceConfig>
+              },
+              {
+                key: TABKeysMap.CUSTOM,
+                label: intl.formatMessage({ id: 'models.form.custom' }),
+                forceRender: true,
+                children: <CustomConfig></CustomConfig>
               }
             ]}
           ></CollapsePanel>

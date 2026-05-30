@@ -43,7 +43,7 @@ export const PageContainerInner: React.FC<PageContainerProps> = ({
 };
 
 const PageBox: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <div>{children}</div>;
+  return <div style={{ overflowX: 'auto' }}>{children}</div>;
 };
 
 export default PageBox;

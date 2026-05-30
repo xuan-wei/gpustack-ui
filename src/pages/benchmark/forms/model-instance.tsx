@@ -65,7 +65,8 @@ const ModelInstanceForm: React.FC = () => {
       model_name: value[0],
       model_id: selectedOptions[0]?.id,
       model_instance_name: value[1],
-      model_instance: value
+      model_instance: value,
+      model_backend: selectedOptions[0]?.backend
     });
   };
 
@@ -114,6 +115,7 @@ const ModelInstanceForm: React.FC = () => {
         value: model.name,
         disabled: modelCategoriesMap.llm !== model.categories?.[0],
         id: model.id,
+        backend: model.backend,
         isLeaf: false,
         ready_replicas: model.ready_replicas,
         children: []

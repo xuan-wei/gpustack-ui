@@ -12,6 +12,10 @@ import {
   ScheduleValueMap
 } from '../config';
 import { backendOptionsMap } from '../config/backend-parameters';
+import {
+  getDefaultLifecycleFormValues,
+  normalizeLifecycleFormValues
+} from '../config/lifecycle-form';
 import { FormData } from '../config/types';
 import { generateGPUSelector } from '../config/utils';
 import DataForm from '../forms';
@@ -65,7 +69,11 @@ const UpdateModal: React.FC<AddModalProps> = (props) => {
 
   const setOriginalFormData = () => {
     if (!originFormData.current) {
-      originFormData.current = _.cloneDeep(formData);
+      originFormData.current = _.cloneDeep({
+        ...getDefaultLifecycleFormValues(),
+        ...formData,
+        ...normalizeLifecycleFormValues(formData)
+      });
       if (!originFormData.current.extended_kv_cache?.enabled) {
         originFormData.current.extended_kv_cache = {
           enabled: false
@@ -173,6 +181,7 @@ const UpdateModal: React.FC<AddModalProps> = (props) => {
 
     submitData = {
       ..._.omit(formdata, ['scheduleType']),
+      ...normalizeLifecycleFormValues(formdata),
       worker_selector:
         formdata.scheduleType === ScheduleValueMap.Manual
           ? null
