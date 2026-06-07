@@ -90,8 +90,9 @@ const ScheduleTypeForm: React.FC = () => {
     } else if (value === ScheduleValueMap.Manual) {
       form.setFieldValue('gpu_selector', {
         gpu_ids: [],
-        gpus_per_replica: null
+        gpus_per_replica: 1
       });
+      form.setFieldValue('distributed_inference_across_workers', false);
     }
   };
 

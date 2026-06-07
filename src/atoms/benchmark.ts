@@ -6,10 +6,12 @@ export const benchmarkTargetInstanceAtom = atom<{
   model_id: number | null;
   model_instance_name: string;
   model_instance: string[];
+  model_backend?: string;
 }>({
   cluster_id: null,
   model_name: '',
   model_id: null,
   model_instance_name: '',
-  model_instance: []
+  model_instance: [],
+  model_backend: undefined
 });

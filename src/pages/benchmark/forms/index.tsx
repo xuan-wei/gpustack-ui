@@ -90,7 +90,8 @@ const ProviderForm: React.FC<ProviderFormProps> = forwardRef((props, ref) => {
         model_instance: [
           currentData.model_name,
           currentData.model_instance_name
-        ]
+        ],
+        model_backend: currentData.instance_snapshot?.backend
       });
     }
   }, [form, currentData, action]);

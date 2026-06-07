@@ -26,6 +26,14 @@ const RandomSettingsForm: React.FC<{
     );
   }, [profile, action]);
 
+  const datasetOptions = useMemo(() => {
+    return datasetList?.map((item) => ({
+      ...item,
+      label: item.label,
+      value: item.label
+    }));
+  }, [datasetList]);
+
   return (
     <>
       <Form.Item<FormData>
@@ -39,11 +47,7 @@ const RandomSettingsForm: React.FC<{
       >
         <SealSelect
           disabled={disabled}
-          options={datasetList?.map((item) => ({
-            ...item,
-            label: item.label,
-            value: item.label
-          }))}
+          options={datasetOptions}
           label={intl.formatMessage({ id: 'benchmark.table.dataset' })}
           required
         ></SealSelect>

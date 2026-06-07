@@ -17,16 +17,20 @@ const DatasetForm: React.FC = () => {
   const { getRuleMessage } = useAppUtils();
   const { action, open, profilesOptions, datasetList } = useFormContext();
 
+  const applyProfileConfig = (
+    option: any,
+    list: Global.BaseOption<number | string>[]
+  ) => {
+    const cfg = _.omit(option?.config, ['description', 'dataset_source']);
+    const dataset_id = list.find(
+      (item) => item.label === cfg.dataset_name
+    )?.value;
+    return { ...cfg, dataset_id };
+  };
+
   const handleProfileChange = (value: string, option: any) => {
     if (value !== ProfileValueMap.Custom) {
-      const dataset_id = datasetList.find(
-        (item) => item.label === option.config?.dataset_name
-      )?.value;
-
-      form.setFieldsValue({
-        dataset_id: dataset_id,
-        ..._.omit(option?.config, ['description', 'dataset_source'])
-      });
+      form.setFieldsValue(applyProfileConfig(option, datasetList));
     }
   };
 
@@ -34,17 +38,12 @@ const DatasetForm: React.FC = () => {
   const initProfile = (
     value: string,
     option: any,
-    datasetList: Global.BaseOption<number | string>[]
+    list: Global.BaseOption<number | string>[]
   ) => {
     if (value !== ProfileValueMap.Custom) {
-      const dataset_id = datasetList.find(
-        (item) => item.label === option.config?.dataset_name
-      )?.value;
-
       form.setFieldsValue({
         profile: value,
-        dataset_id: dataset_id,
-        ..._.omit(option?.config, ['description', 'dataset_source'])
+        ...applyProfileConfig(option, list)
       });
     }
   };
@@ -54,11 +53,11 @@ const DatasetForm: React.FC = () => {
       const init = async () => {
         if (!profilesOptions || profilesOptions.length === 0) return;
 
-        const throughputProfile = profilesOptions.find(
+        const preferred = profilesOptions.find(
           (item) => item.value === ProfileValueMap.ThroughputMedium
         );
-        if (throughputProfile) {
-          initProfile(throughputProfile.value, throughputProfile, datasetList);
+        if (preferred) {
+          initProfile(preferred.value, preferred, datasetList);
         }
       };
       init();

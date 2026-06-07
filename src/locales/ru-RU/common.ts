@@ -160,6 +160,7 @@ export default {
   'common.time.label': 'Период',
   'common.time.hour': 'Час',
   'common.time.minute': 'Минута',
+  'common.time.second': 'с',
   'common.issue.report': 'Сообщить о проблеме',
   'common.social.discord': 'Присоединиться к Discord',
   'common.table.mark': 'Комментарий',

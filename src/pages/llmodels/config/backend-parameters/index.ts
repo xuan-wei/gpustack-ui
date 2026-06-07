@@ -8,7 +8,7 @@ import vllmParameters from './vllm';
  * backend label map
  */
 export const backendOptionsMap = {
-  llamaBox: 'llama-box',
+  llamaBox: 'llama.cpp',
   vllm: 'vLLM',
   voxBox: 'VoxBox',
   ascendMindie: 'MindIE',

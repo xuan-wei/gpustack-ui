@@ -25,6 +25,7 @@ import { DownOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { useIntl, useNavigate, useSearchParams } from '@umijs/max';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Input, Space, message } from 'antd';
+import dayjs from 'dayjs';
 import { useAtom } from 'jotai';
 import _ from 'lodash';
 import React, {
@@ -63,6 +64,7 @@ import useEditDeployment from '../hooks/use-edit-deployment';
 import useFilterStatus from '../hooks/use-filter-status';
 import useFormInitialValues from '../hooks/use-form-initial-values';
 import useModelsColumns from '../hooks/use-models-columns';
+import useRuntimeSnapshots from '../hooks/use-runtime-snapshots';
 import DeployModal from './deploy-modal';
 import Instances from './instances';
 import UpdateModelModal from './update-modal';
@@ -200,6 +202,20 @@ const Models: React.FC<ModelsProps> = ({
     status: ''
   });
   const modalRef = useRef<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const {
+    snapshots: runtimeSnapshots,
+    updatedAt: runtimeUpdatedAt,
+    refresh: refreshRuntime,
+    refreshing: runtimeRefreshing
+  } = useRuntimeSnapshots(15000);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (deleteIds?.length) {
@@ -223,15 +239,195 @@ const Models: React.FC<ModelsProps> = ({
 
   const handleOnCell = useMemoizedFn(async (record: any, extra: any) => {
     try {
-      await updateModel(getFormattedData(record, { replicas: extra.newValue }));
+      const field = extra.dataIndex ?? 'replicas';
+      await updateModel(getFormattedData(record, { [field]: extra.newValue }));
       message.success(intl.formatMessage({ id: 'common.message.success' }));
-      if (extra.newValue > extra.oldValue) {
+      if (field === 'replicas' && extra.newValue > extra.oldValue) {
         updateExpandedRowKeys([record.id, ...expandedRowKeys]);
       }
     } catch (error) {
       // ignore
     }
   });
+
+  // Single helper for the lifecycle toggles: patch one or more fields on a
+  // model, toast, and refresh. Replaces five near-identical handlers.
+  const patchModel = useCallback(
+    async (record: ListItem, partial: Record<string, any>) => {
+      try {
+        await updateModel(getFormattedData(record, partial));
+        message.success(intl.formatMessage({ id: 'common.message.success' }));
+        handleSearch();
+      } catch (error) {
+        message.error(intl.formatMessage({ id: 'common.message.failed' }));
+      }
+    },
+    [handleSearch, intl]
+  );
+
+  const handleAutoLoadToggle = useCallback(
+    (checked: boolean, record: ListItem) => {
+      const partial: any = { auto_load: checked };
+      // Turning auto-load off also disables auto-adjust (ceiling source).
+      if (!checked && record.auto_adjust_replicas !== undefined) {
+        partial.auto_adjust_replicas = false;
+      }
+      return patchModel(record, partial);
+    },
+    [patchModel]
+  );
+
+  const handleAutoUnloadToggle = useCallback(
+    (checked: boolean, record: ListItem) =>
+      patchModel(record, { auto_unload: checked }),
+    [patchModel]
+  );
+
+  const handleAutoAdjustToggle = useCallback(
+    (checked: boolean, record: ListItem) =>
+      patchModel(record, { auto_adjust_replicas: checked }),
+    [patchModel]
+  );
+
+  const formatCountdown = useCallback(
+    (ms: number): string => {
+      const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+      const secUnit = intl.formatMessage({ id: 'common.time.second' });
+      const m = Math.floor(ms / 60_000);
+      const s = Math.floor((ms % 60_000) / 1000);
+      return `${m}${minUnit} ${s}${secUnit}`;
+    },
+    [intl]
+  );
+
+  const calculateUnloadTime = useCallback(
+    (record: ListItem): string | null => {
+      if (!record.auto_unload || !record.auto_unload_timeout) {
+        return null;
+      }
+      const timeoutMinutes = record.auto_unload_timeout;
+      const timeoutSeconds = timeoutMinutes * 60;
+      const candidates = [
+        record.last_request_time,
+        record.last_scale_time,
+        record.created_at
+      ].filter(Boolean);
+      if (candidates.length === 0) {
+        const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+        return `${timeoutMinutes}${minUnit}`;
+      }
+      try {
+        const lastRequestTime = candidates
+          .map((t) => dayjs(t).utc())
+          .reduce((a, b) => (a.isAfter(b) ? a : b));
+        const now = dayjs().utc();
+        const expiryTime = lastRequestTime.add(timeoutSeconds, 'second');
+        const diffMs = Math.max(0, expiryTime.diff(now));
+        if (diffMs < 1000) {
+          return intl.formatMessage({ id: 'models.form.waitingUnloading' });
+        }
+        return formatCountdown(diffMs);
+      } catch {
+        const minUnit = intl.formatMessage({ id: 'common.time.minute' });
+        return `${timeoutMinutes}${minUnit}`;
+      }
+    },
+    [intl, formatCountdown]
+  );
+
+  const calculateNextScaleTime = useCallback(
+    (record: ListItem): string | React.ReactElement | null => {
+      if (!record.auto_adjust_replicas) {
+        return null;
+      }
+      if (record.replicas === 0) {
+        return null;
+      }
+      const now = dayjs().utc();
+
+      try {
+        // 1. Pressure accumulating → show countdown to trigger
+        if (record.scale_pressure_since) {
+          const pressureSince = dayjs(record.scale_pressure_since).utc();
+          const windowSeconds = (record.scale_window_minutes || 5) * 60;
+          const triggerTime = pressureSince.add(windowSeconds, 'second');
+          const diffMs = Math.max(0, triggerTime.diff(now));
+          if (diffMs < 1000) {
+            return intl.formatMessage({
+              id: 'models.form.checkingReplicasChange'
+            });
+          }
+          const triggerLabel = intl.formatMessage({
+            id: 'models.form.scaleTriggerCountdown'
+          });
+          return `${formatCountdown(diffMs)} ${triggerLabel}`;
+        }
+
+        // 2. Just scaled (<5s ago) → show scale details
+        if (record.last_scale_time) {
+          const lastScaleTime = dayjs(record.last_scale_time).utc();
+          const elapsedSeconds = now.diff(lastScaleTime, 'second');
+
+          if (elapsedSeconds >= 0 && elapsedSeconds < 1) {
+            return intl.formatMessage({
+              id: 'models.form.checkingReplicasChange'
+            });
+          }
+
+          if (elapsedSeconds >= 1 && elapsedSeconds <= 5) {
+            if (record.last_scale_message) {
+              try {
+                const msg = record.last_scale_message;
+                const direction = msg.startsWith('up:') ? '↑' : '↓';
+                const arrowMatch = msg.match(/(\d+)->(\d+)/);
+                if (arrowMatch) {
+                  return (
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        lineHeight: '1.2',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div>
+                        {intl.formatMessage({ id: 'models.form.replicas' })}：
+                        {arrowMatch[1]} {direction} {arrowMatch[2]}
+                      </div>
+                    </div>
+                  );
+                }
+              } catch {
+                // ignore parse error
+              }
+            }
+            return intl.formatMessage({
+              id: 'models.form.replicasChangeNoChange'
+            });
+          }
+
+          // 3. In cooldown period → show cooldown countdown
+          const cooldownSeconds = ((record.scale_window_minutes || 5) / 2) * 60;
+          const cooldownEnd = lastScaleTime.add(cooldownSeconds, 'second');
+          const cooldownRemainMs = cooldownEnd.diff(now);
+          if (cooldownRemainMs > 0) {
+            const cooldownLabel = intl.formatMessage({
+              id: 'models.form.scaleCooldown'
+            });
+            return `${cooldownLabel} ${formatCountdown(cooldownRemainMs)}`;
+          }
+
+          // Post-cooldown: scaling happened before, awaiting next evaluation
+          return intl.formatMessage({ id: 'models.form.monitoringLoad' });
+        }
+
+        // 4. Idle — no pressure, never scaled
+        return intl.formatMessage({ id: 'models.form.waitingFirstScaling' });
+      } catch {
+        return intl.formatMessage({ id: 'models.form.waitingFirstScaling' });
+      }
+    },
+    [intl, formatCountdown]
+  );
 
   const handleStartModel = async (row: ListItem) => {
     await updateModel(getFormattedData(row, { replicas: 1 }));
@@ -549,11 +745,34 @@ const Models: React.FC<ModelsProps> = ({
   const options = useMemo(() => {
     return {
       handleSelect,
-      clusterList,
       sortOrder,
-      targetList: targetList
+      targetList,
+      refreshTrigger,
+      handleAutoLoadToggle,
+      handleAutoUnloadToggle,
+      handleAutoAdjustToggle,
+      calculateUnloadTime,
+      calculateNextScaleTime,
+      runtimeSnapshots,
+      runtimeUpdatedAt,
+      refreshRuntime,
+      runtimeRefreshing
     };
-  }, [handleSelect, clusterList, sortOrder, targetList]);
+  }, [
+    handleSelect,
+    sortOrder,
+    targetList,
+    refreshTrigger,
+    handleAutoLoadToggle,
+    handleAutoUnloadToggle,
+    handleAutoAdjustToggle,
+    calculateUnloadTime,
+    calculateNextScaleTime,
+    runtimeSnapshots,
+    runtimeUpdatedAt,
+    refreshRuntime,
+    runtimeRefreshing
+  ]);
 
   const columns = useModelsColumns(options);
 
@@ -693,37 +912,41 @@ const Models: React.FC<ModelsProps> = ({
           }
         ></PageTools>
 
-        <SealTable
-          columns={columns}
-          sortDirections={TABLE_SORT_DIRECTIONS}
-          dataSource={dataSource}
-          rowSelection={rowSelection}
-          expandedRowKeys={expandedRowKeys}
-          showSorterTooltip={false}
-          onExpand={handleExpandChange}
-          onExpandAll={handleToggleExpandAll}
-          loading={loading}
-          loadend={loadend}
-          rowKey="id"
-          childParentKey="model_id"
-          expandable={true}
-          onTableSort={handleOnSort}
-          onCell={handleOnCell}
-          pollingChildren={false}
-          watchChildren={true}
-          loadChildren={getModelInstances}
-          loadChildrenAPI={generateChildrenRequestAPI}
-          renderChildren={renderChildren}
-          empty={noResourceResult}
-          pagination={{
-            showSizeChanger: true,
-            pageSize: queryParams.perPage,
-            current: queryParams.page,
-            total: total,
-            hideOnSinglePage: queryParams.perPage === 10,
-            onChange: handlePageChange
-          }}
-        ></SealTable>
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ minWidth: 1450 }}>
+            <SealTable
+              columns={columns}
+              sortDirections={TABLE_SORT_DIRECTIONS}
+              dataSource={dataSource}
+              rowSelection={rowSelection}
+              expandedRowKeys={expandedRowKeys}
+              showSorterTooltip={false}
+              onExpand={handleExpandChange}
+              onExpandAll={handleToggleExpandAll}
+              loading={loading}
+              loadend={loadend}
+              rowKey="id"
+              childParentKey="model_id"
+              expandable={true}
+              onTableSort={handleOnSort}
+              onCell={handleOnCell}
+              pollingChildren={false}
+              watchChildren={true}
+              loadChildren={getModelInstances}
+              loadChildrenAPI={generateChildrenRequestAPI}
+              renderChildren={renderChildren}
+              empty={noResourceResult}
+              pagination={{
+                showSizeChanger: true,
+                pageSize: queryParams.perPage,
+                current: queryParams.page,
+                total: total,
+                hideOnSinglePage: queryParams.perPage === 10,
+                onChange: handlePageChange
+              }}
+            ></SealTable>
+          </div>
+        </div>
       </PageBox>
       <UpdateModelModal
         open={openEditModalStatus.open}

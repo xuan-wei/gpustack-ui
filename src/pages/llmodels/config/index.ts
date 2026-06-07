@@ -46,7 +46,7 @@ export const localPathTipsList = [
 ];
 
 export const backendLabelMap = {
-  [backendOptionsMap.llamaBox]: 'llama-box',
+  [backendOptionsMap.llamaBox]: 'llama.cpp',
   [backendOptionsMap.vllm]: 'vLLM',
   [backendOptionsMap.voxBox]: 'vox-box',
   [backendOptionsMap.ascendMindie]: 'Ascend MindIE',
@@ -388,10 +388,13 @@ export const defaultFormValues = {
   description: '',
   categories: null,
   env: {},
-  scheduleType: ScheduleValueMap.Auto,
+  scheduleType: ScheduleValueMap.Manual,
   placement_strategy: 'spread',
   gpu_ids: null,
-  gpu_selector: {},
+  gpu_selector: {
+    gpu_ids: [],
+    gpus_per_replica: 1
+  },
   worker_selector: {},
   backend_parameters: [],
   backend_version: null
@@ -400,10 +403,10 @@ export const defaultFormValues = {
 export const getBackendParamsTips = (backend: string) => {
   if (backend === backendOptionsMap.llamaBox) {
     return {
-      backend: 'llama-box',
-      releases: 'https://github.com/gpustack/llama-box/releases',
-      link: 'https://github.com/gpustack/llama-box?tab=readme-ov-file#usage',
-      version: 'v0.0.140'
+      backend: 'llama.cpp',
+      releases: 'https://github.com/ggml-org/llama.cpp/releases',
+      link: 'https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md',
+      version: ''
     };
   }
   if (backend === backendOptionsMap.vllm) {

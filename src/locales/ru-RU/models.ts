@@ -122,6 +122,9 @@ export default {
   'models.form.releases': 'Релизы',
   'models.form.moreparameters': 'Описание параметров',
   'models.table.vram.allocated': 'Выделенная VRAM',
+  'models.table.metrics': 'Метрики',
+  'models.table.lifecycle': 'Жизненный цикл',
+  'models.table.waiting': 'Ожидание',
   'models.form.backend.warning':
     'Выбранный бэкенд не поддерживает модели GGUF. Пожалуйста, добавьте бэкенд с поддержкой GGUF в разделе Бэкенды вывода.',
   'models.form.backend.warning.gguf':
@@ -228,6 +231,7 @@ export default {
   'models.form.kvCache.tips2':
     'Поддерживается только при использовании встроенных бэкендов вывода (vLLM или SGLang).',
   'models.form.scheduling': 'Планирование',
+  'models.form.custom': 'Пользовательские',
   'models.form.ramRatio': 'Соотношение ОЗУ к VRAM',
   'models.form.ramSize': 'Максимальный размер ОЗУ (ГиБ)',
   'models.form.ramRatio.tips':
@@ -263,6 +267,33 @@ export default {
   'models.form.generic_proxy': 'Включить универсальный прокси',
   'models.form.enableModelRoute': 'Enable Model Route',
   'models.form.enableModelRoute.tips': 'Enable Model Route',
+  'models.form.autoLoad': 'Автозагрузка',
+  'models.form.autoLoad.tips':
+    'Автоматически запускает реплики при поступлении запроса, если нет готовых инстансов.',
+  'models.form.autoLoadReplicas': 'Реплики автозагрузки',
+  'models.form.autoLoadReplicas.tips':
+    'Количество реплик, запускаемых при срабатывании автозагрузки. Также служит верхней границей для «Автоподстройки реплик».',
+  'models.form.autoAdjustReplicas': 'Автоподстройка реплик',
+  'models.form.autoAdjustReplicas.tips':
+    'Позволяет системе автоматически масштабировать число реплик в зависимости от реального трафика. Верхняя граница — «Реплики автозагрузки», нижняя — 1. Чтобы разрешить масштабирование вверх, задайте «Реплики автозагрузки» больше 1.',
+  'models.form.scaleWindowMinutes': 'Окно наблюдения масштабирования (мин)',
+  'models.form.scaleWindowMinutes.tips':
+    'Условие масштабирования должно выполняться в течение этого времени. Кулдаун — половина окна.',
+  'models.form.scaleDownKvThreshold': 'Порог KV для уменьшения',
+  'models.form.scaleDownKvThreshold.tips':
+    'При пустой очереди и прогнозируемом среднем использовании KV-кэша ниже порога — уменьшить число реплик.',
+  'models.form.autoUnload': 'Автовыгрузка',
+  'models.form.autoUnload.tips':
+    'Автоматически останавливает простаивающие реплики после заданного тайм-аута.',
+  'models.form.autoUnloadTimeout': 'Тайм-аут автовыгрузки (секунды)',
+  'models.form.autoUnloadTimeout.tips':
+    'Сколько модель может простаивать до автоматической выгрузки.',
+  'models.form.gpuMemoryMinGib': 'Минимум VRAM (ГиБ)',
+  'models.form.gpuMemoryMinGib.tips':
+    'Минимальный абсолютный объём VRAM (ГиБ) на каждый GPU, используемый моделью. При указании GPUStack обратно вычисляет --gpu-memory-utilization, перезаписывая пользовательское значение. Поддерживается один знак после запятой (напр. 13,5). Пусто — без нижней границы.',
+  'models.form.gpuMemoryMaxGib': 'Максимум VRAM (ГиБ)',
+  'models.form.gpuMemoryMaxGib.tips':
+    'Максимальный абсолютный объём VRAM (ГиБ) на каждый GPU. При указании GPUStack обратно вычисляет --gpu-memory-utilization, перезаписывая пользовательское значение. Если равен минимуму — фиксированное значение. Поддерживается один знак после запятой (напр. 13,5). Пусто — без верхней границы.',
   'models.form.generic_proxy.tips':
     'После включения универсального прокси вы можете получать доступ к URI-путям, которые не следуют стандарту OpenAI API.',
   'models.form.generic_proxy.button': 'Универсальный прокси',
@@ -283,7 +314,38 @@ export default {
   'models.form.maxContextLength': 'Maximum Context Length',
   'models.form.backend.helperText':
     'Not enabled yet. Will be enabled after deployment. ',
-  'models.table.instance.benchmark': 'Run Benchmark'
+  'models.table.instance.benchmark': 'Run Benchmark',
+  'models.table.avgRequestRate': 'Request Rate',
+  'models.table.avgProcessRate': 'Process Rate',
+  'models.table.requestProcessRate': 'Request/Process Rate',
+  'models.table.requestProcessRate.tips':
+    'Calculate request rate and process rate based on request and processing data from the past 2 minutes (updated every 15 seconds)',
+  'models.table.runtimeLoad': 'Текущая нагрузка',
+  'models.table.runtimeLoad.tips':
+    'Метрики от инференс-бэкенда: активные / ожидающие запросы, нагрузка (KV-кэш для vLLM, занятость слотов для llama.cpp), частота запросов, TTFT, TPOT, пропускная способность (обновление каждые 30 с). Наведите курсор для подробностей.',
+  'models.table.runtimeLoad.loadSourceVllm': 'Использование KV-кэша',
+  'models.table.runtimeLoad.loadSourceLlamaCpp': 'Занятость слотов',
+  'models.table.runtimeLoad.running': 'Активные',
+  'models.table.runtimeLoad.waiting': 'Очередь',
+  'models.table.runtimeLoad.kvAvg': 'KV-кэш',
+  'models.table.runtimeLoad.load': 'Нагрузка',
+  'models.table.runtimeLoad.reqRate': 'Запросы',
+  'models.table.runtimeLoad.throughput': 'Пропускная способность',
+  'models.table.runtimeLoad.ttft': 'TTFT',
+  'models.table.runtimeLoad.tpot': 'TPOT',
+  'models.table.runtimeLoad.refresh': 'Обновить сейчас',
+  'models.table.runtimeLoad.waitingData': 'Ожидание данных...',
+  'models.table.runtimeLoad.updatedAt': 'Обновлено {time}',
+  'models.table.runtimeLoad.kvNa': 'N/A',
+  'models.table.lastUsed': 'Послед. исп.',
+  'models.table.lastUsed.never': 'Никогда',
+  'models.form.waitingFirstScaling': 'Waiting for first auto scaling',
+  'models.form.monitoringLoad': 'Monitoring load',
+  'models.form.checkingReplicasChange': 'Checking replicas change...',
+  'models.form.replicasChangeNoChange': 'No replicas change',
+  'models.form.scaleCooldown': 'Cooldown',
+  'models.form.scaleTriggerCountdown': 'to trigger',
+  'models.form.waitingUnloading': 'Waiting for Unloading...'
 };
 
 // ========== To-Do: Translate Keys (Remove After Translation) ==========
